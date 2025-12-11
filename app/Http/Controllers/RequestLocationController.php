@@ -32,7 +32,7 @@ class RequestLocationController extends Controller
                     'location_request.image_path',
                     'location_request.created_at',
                     'location_request.updated_at'
-                )
+                )->where('approved_at', null)
                 ->get();
 
             Log::info('Data fetched:', ['count' => $locations_request->count()]);
@@ -102,7 +102,7 @@ class RequestLocationController extends Controller
         // Update approved_at
         $req->approve();
 
-        return response()->json([
+        return redirect()->back()->with([
             'message' => 'Lokasi berhasil di-approve dan dipindahkan ke daftar lokasi.'
         ]);
     }

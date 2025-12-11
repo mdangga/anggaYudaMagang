@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch, onUnmounted, inject } from 'vue'
-import { Head, Link } from '@inertiajs/vue3'
+import { Head, Link, router } from '@inertiajs/vue3'
 import MapComponent from '@/Components/Map.vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
@@ -20,6 +20,7 @@ const toggleDarkMode = inject('toggleDarkMode', () => {})
 
 // Map reference
 const mapComponentRef = ref(null)
+const mapKey = ref(Date.now())
 
 const chartData = ref([
     { year: 'Teknologi', value: 4.0 },
@@ -169,6 +170,7 @@ onMounted(async () => {
 
     // Fetch locations
     await getLocation()
+    await getLocationRequest()
 
     console.log(pendingRequests)
     // Setup event listeners
@@ -198,18 +200,52 @@ onUnmounted(() => {
 
 async function getLocation() {
     try {
-        const res1 = await fetch('/get-location')
-        const res2 = await fetch('/request-locations/get-location')
-        if (!res1.ok || !res2.ok) throw new Error('Fetch failed')
-        const data1 = await res1.json()
-        const data2 = await res2.json()
-        locations.value = Array.isArray(data1) ? data1 : []
-        pendingRequests.value = Array.isArray(data2) ? data2 : []
+        const res = await fetch('/get-location')
+        if (!res.ok) throw new Error('Fetch failed')
+        const data = await res.json()
+        locations.value = Array.isArray(data) ? data : []
         return locations.value
     } catch (err) {
         console.error('Error loading locations:', err)
         locations.value = []
         return []
+    }
+}
+
+async function getLocationRequest() {
+    try {
+        const res = await fetch('/request-locations/get-location')
+        if (!res.ok) throw new Error('Fetch failed')
+        const data = await res.json()
+        pendingRequests.value = Array.isArray(data) ? data : []
+        return pendingRequests.value
+    } catch (err) {
+        console.error('Error loading locations request:', err)
+        pendingRequests.value = []
+        return []
+    }
+}
+
+async function getCatecory() {
+    try {
+        
+    } catch (err) {
+        console.error('Error loading locations:', err)
+        .value = []
+        return []
+    }
+}
+
+async function approveRequest(id) {
+    try {
+        await router.post(route('request-locations.approve', id));
+        const idx = pendingRequests.value.findIndex(r => r.id_request === id || r.id === id)
+        if (idx !== -1) pendingRequests.value.splice(idx, 1)
+        await getLocation()
+        await getLocationRequest()
+        mapKey.value = Date.now()
+    } catch (err) {
+        console.error('Approve failed:', err)
     }
 }
 
@@ -257,13 +293,14 @@ watch(selectedLocation, (newLocation) => {
                 </div>
                 <div class="p-4">
                     <div class="h-96 w-full rounded-md overflow-hidden">
-                        <MapComponent 
-                            ref="mapComponentRef" 
-                            :locations="locations" 
-                            :selected-location="selectedLocation"
-                            :sidebar-open="sidebarOpen" 
-                            @location-selected="selectLocation"
-                            @map-initialized="onMapInitialized"
+                        <MapComponent
+                          :key="mapKey"
+                          ref="mapComponentRef"
+                          :locations="locations"
+                          :selected-location="selectedLocation"
+                          :sidebar-open="sidebarOpen"
+                          @location-selected="selectLocation"
+                          @map-initialized="onMapInitialized"
                         />
                     </div>
                 </div>
@@ -339,11 +376,13 @@ watch(selectedLocation, (newLocation) => {
                                 </div>
                             </div>
                             <div class="flex gap-2 ml-4">
-                                <button @click="approveRequest(request.id_request)"
-                                    class="w-8 h-8 rounded-md bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-colors"
-                                    title="Setujui">
-                                    <i class="fas fa-check"></i>
-                                </button>
+                                <Link :href="route('request-locations.approve', request.id_request)" method="post">
+                                    <button @click="approveRequest(request.id_request)"
+                                        class="w-8 h-8 rounded-md bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-colors"
+                                        title="Setujui">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </Link>
                                 <button @click="rejectRequest(request.id_request)"
                                     class="w-8 h-8 rounded-md bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
                                     title="Tolak">
