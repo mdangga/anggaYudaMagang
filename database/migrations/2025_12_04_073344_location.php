@@ -29,6 +29,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_category');
             $table->timestamp('approved_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('id_category')->references('id_category')->on('category')->onDelete('cascade');
         });
@@ -42,6 +43,7 @@ return new class extends Migration
             $table->text('image_path');
             $table->unsignedBigInteger('id_category');
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('id_category')->references('id_category')->on('category')->onDelete('cascade');
         });

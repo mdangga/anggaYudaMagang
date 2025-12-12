@@ -8,17 +8,20 @@ use App\Models\Location;
 use App\Models\LocationRequest;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 
 class RequestLocationController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-     try {
+        try {
             Log::info('getData function called');
 
-            $locations_request = DB::table('location_request')
+            $status = $request->query('status', 'all');
+
+            $query = DB::table('location_request')
                 ->join('category', 'location_request.id_category', '=', 'category.id_category')
                 ->select(
                     'location_request.student_name',
@@ -31,15 +34,31 @@ class RequestLocationController extends Controller
                     'location_request.longitude',
                     'location_request.image_path',
                     'location_request.created_at',
-                    'location_request.updated_at'
-                )->where('approved_at', null)
-                ->get();
+                    'location_request.updated_at',
+                    'location_request.approved_at',
+                    'location_request.deleted_at'
+                );
+
+            if ($status === 'pending') {
+                $query->whereNull('location_request.approved_at')
+                    ->whereNull('location_request.deleted_at');
+            } elseif ($status === 'approved') {
+                $query->whereNotNull('location_request.approved_at')
+                    ->whereNull('location_request.deleted_at');
+            } elseif ($status === 'deleted') {
+                $query->whereNotNull('location_request.deleted_at');
+            } elseif ($status === 'all') {
+
+            } else {
+                return response()->json(['error' => 'Status filter invalid'], 400);
+            }
+
+            $locations_request = $query->get();
 
             Log::info('Data fetched:', ['count' => $locations_request->count()]);
 
-            // Debug: tampilkan data langsung
             if ($locations_request->isEmpty()) {
-                Log::warning('No data found in database');
+                Log::warning('No data found');
             }
 
             $locations = $locations_request->map(function ($loc) {
@@ -49,15 +68,16 @@ class RequestLocationController extends Controller
                 return $loc;
             });
 
-            return response()->json($locations_request);
+            return response()->json($locations);
         } catch (\Exception $e) {
             Log::error('Error in getData:', ['error' => $e->getMessage()]);
             return response()->json([
                 'error' => $e->getMessage()
             ], 500);
-        }   
+        }
     }
-    
+
+
     // * menampilkan form request location
     public function create()
     {

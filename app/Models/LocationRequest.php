@@ -3,9 +3,11 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class LocationRequest extends Model
 {
+    use SoftDeletes;
     protected $table = 'location_request';
     protected $primaryKey = 'id_request';
 
