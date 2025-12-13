@@ -168,7 +168,7 @@ const chartOptions = computed(() => {
     const isDark = document.documentElement.classList.contains('dark');
     const textColor = isDark ? '#e2e8f0' : '#374151';
     const gridColor = isDark ? '#334155' : '#e5e7eb';
-    
+
     return {
         chart: {
             type: 'bar',
@@ -212,7 +212,7 @@ const chartOptions = computed(() => {
                 style: {
                     colors: textColor
                 },
-                formatter: function(val) {
+                formatter: function (val) {
                     return Math.floor(val); // Hilangkan desimal
                 }
             },
@@ -235,7 +235,7 @@ const chartOptions = computed(() => {
         tooltip: {
             theme: isDark ? 'dark' : 'light',
             y: {
-                formatter: function(val) {
+                formatter: function (val) {
                     return val + ' lokasi';
                 }
             }
@@ -465,13 +465,11 @@ watch(selectedLocation, (newLocation) => {
                                 </div>
                             </div>
                             <div class="flex gap-2 ml-4">
-                                <Link :href="route('request-locations.approve', request.id_request)" method="post">
-                                    <button @click="approveRequest(request.id_request)"
-                                        class="w-8 h-8 rounded-md bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-colors"
-                                        title="Setujui">
-                                        <i class="fas fa-check"></i>
-                                    </button>
-                                </Link>
+                                <button @click="approveRequest(request.id_request)"
+                                    class="w-8 h-8 rounded-md bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-colors"
+                                    title="Setujui">
+                                    <i class="fas fa-check"></i>
+                                </button>
                                 <button @click="rejectRequest(request.id_request)"
                                     class="w-8 h-8 rounded-md bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
                                     title="Tolak">

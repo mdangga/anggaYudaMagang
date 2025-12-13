@@ -28,57 +28,47 @@ const props = defineProps({
             <div>
                 <InputLabel for="name_location" value="Nama Perusahaan/Lokasi *" />
 
-                <TextInput
-                    id="name_location"
-                    type="text"
-                    class="form-input mt-1"
-                    v-model="form.name_location"
-                    required
-                    placeholder="Contoh: PT. Contoh Teknologi"
-                />
+                <TextInput id="name_location" type="text" class="form-input mt-1" v-model="form.name_location" required
+                    placeholder="Contoh: PT. Contoh Teknologi" />
 
                 <InputError class="mt-2" :message="form.errors.name_location" />
             </div>
 
-            <!-- Category -->
-            <div>
-                <InputLabel for="id_category" value="Kategori *" />
-
-                <select
-                    id="id_category"
-                    class="form-select mt-1"
-                    v-model="form.id_category"
-                    required
-                >
-                    <option value="">Pilih Kategori</option>
-                    <option
-                        v-for="category in categories"
-                        :key="category.id_category"
-                        :value="category.id_category"
-                    >
-                        {{ category.name_category }}
-                    </option>
-                </select>
-
-                <InputError class="mt-2" :message="form.errors.id_category" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Category -->
+                <div>
+                    <InputLabel for="id_category" value="Kategori *" />
+    
+                    <select id="id_category" class="form-select mt-1" v-model="form.id_category" required>
+                        <option value="">Pilih Kategori</option>
+                        <option v-for="category in categories" :key="category.id_category" :value="category.id_category">
+                            {{ category.name_category }}
+                        </option>
+                    </select>
+    
+                    <InputError class="mt-2" :message="form.errors.id_category" />
+                </div>
+    
+                <!-- Contact -->
+                <div>
+                    <InputLabel for="contact" value="Contact Person *" />
+    
+                    <TextInput id="contact" type="text" class="form-input mt-1" v-model="form.contact" required
+                        inputmode="numeric" pattern="^[0-9+]{9,15}$" placeholder="Contoh: 081234567890 / +6281234567890" />
+    
+                    <InputError class="mt-2" :message="form.errors.contact" />
+                </div>
             </div>
 
             <!-- Description -->
             <div>
                 <InputLabel for="description" value="Deskripsi *" />
 
-                <textarea
-                    id="description"
-                    class="form-textarea mt-1"
-                    v-model="form.description"
-                    rows="4"
-                    required
-                    placeholder="Deskripsikan perusahaan, program magang yang ditawarkan, dll."
-                ></textarea>
+                <textarea id="description" class="form-textarea mt-1" v-model="form.description" rows="4" required
+                    placeholder="Deskripsikan perusahaan, program magang yang ditawarkan, dll."></textarea>
 
                 <InputError class="mt-2" :message="form.errors.description" />
             </div>
-
         </div>
     </div>
 </template>

@@ -6,32 +6,25 @@ import InputLabel from '@/Components/InputLabel.vue'
 import TextInput from '@/Components/TextInput.vue'
 import InputError from '@/Components/InputError.vue'
 import PrimaryButton from '@/Components/PrimaryButton.vue'
-import LocationPicker from '@/Components/LocationPicker.vue'
-import CompanyFormCard from '@/Components/CardPerusahaanForm.vue'
-import ImageUpload from '@/Components/ImageUpload.vue'
 
 /* ================================
    IMPORT UTILITIES
 ================================ */
 import { useForm, usePage, Head } from '@inertiajs/vue3'
-import { ref, onMounted, watch, defineProps } from 'vue'
-import 'leaflet/dist/leaflet.css'
+import { ref, onMounted, watch } from 'vue'
 
 /* ================================
    PROPS & USER DATA
 ================================ */
-const { auth } = usePage().props
-const user = auth.user
-
-const { categories = [] } = defineProps({
-    categories: {
+const { faculties = [] } = defineProps({
+    faculties: {
         type: Array,
         default: () => []
     }
 })
 
 /* ================================
-   DARK MODE HANDLER
+DARK MODE HANDLER
 ================================ */
 const darkMode = ref(false)
 
@@ -48,7 +41,7 @@ const toggleDarkMode = () => {
 onMounted(() => {
     const savedTheme = localStorage.getItem('theme')
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)')
-
+    
     if (savedTheme) {
         darkMode.value = savedTheme === 'dark'
     } else {
@@ -72,19 +65,14 @@ watch(darkMode, applyDarkMode)
    FORM
 ================================ */
 const form = useForm({
-    student_name: user?.name || '',
-    nim: '',
-    name_location: '',
-    description: '',
-    latitude: '',
-    longitude: '',
-    image: null,
-    id_category: '',
+    name_department: '',
+    degree_level: '',
+    id_faculty: '',
     errors: {}
 })
 
 const submit = () => {
-    form.post(route('request-locations.store'), {
+    form.post(route('department.store'), {
         preserveScroll: true,
         onSuccess: () => form.reset(),
         onError: (errors) => console.log('Form submission errors:', errors)
@@ -93,6 +81,7 @@ const submit = () => {
 </script>
 
 <template>
+
     <Head title="Form Lokasi" />
     <div class="min-h-screen bg-neutral-50 dark:bg-neutral-900 py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-4xl mx-auto">
@@ -100,14 +89,15 @@ const submit = () => {
             <!-- Header -->
             <div class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
-                    <div class="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
+                    <div
+                        class="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
                         <i class="fas fa-map-marker-alt text-white text-lg"></i>
                     </div>
 
                     <div>
-                        <h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Request Lokasi Magang</h1>
+                        <h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Tambah Jurusan</h1>
                         <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                            Tambahkan lokasi tempat Anda magang. Data akan diverifikasi terlebih dahulu.
+                            Tambahkan jurusan baru ke dalam sistem.
                         </p>
                     </div>
                 </div>
@@ -120,76 +110,54 @@ const submit = () => {
                 <div class="card">
                     <div class="card-header">
                         <i class="fas fa-user-graduate text-primary mr-2"></i>
-                        Informasi Mahasiswa
+                        Informasi Jurusan
                     </div>
 
                     <div class="card-content grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Nama -->
+                        <!-- Degree Level -->
                         <div>
-                            <InputLabel for="student_name" value="Nama Mahasiswa *" />
-                            <TextInput
-                                id="student_name"
-                                type="text"
-                                class="form-input mt-1"
-                                v-model="form.student_name"
-                                required
-                                :disabled="!!user?.name"
-                                placeholder="Nama lengkap mahasiswa"
-                            />
-                            <InputError class="mt-2" :message="form.errors.student_name" />
+                            <InputLabel for="degree_level" value="Gelar *" />
+                            <TextInput id="degree_level" type="text" class="form-input mt-1" v-model="form.degree_level"
+                                required placeholder="Gelar (S1,S2,S3,dll)" />
+                            <InputError class="mt-2" :message="form.errors.degree_level" />
                         </div>
 
-                        <!-- NIM -->
+                        <!-- Nama -->
                         <div>
-                            <InputLabel for="nim" value="NIM *" />
-                            <TextInput
-                                id="nim"
-                                type="text"
-                                class="form-input mt-1"
-                                v-model="form.nim"
-                                required
-                                placeholder="Contoh: 123456789"
-                            />
-                            <InputError class="mt-2" :message="form.errors.nim" />
+                            <InputLabel for="name_department" value="Nama Jurusan *" />
+                            <TextInput id="name_department" type="text" class="form-input mt-1"
+                                v-model="form.name_department" required
+                                placeholder="Hukum Hindu, Teknik Informatika, dll" />
+                            <InputError class="mt-2" :message="form.errors.name_department" />
+                        </div>
+                        <div>
+                            <InputLabel for="id_faculty" value="Fakultas *" />
+    
+                            <select id="id_faculty" class="form-select mt-1" v-model="form.id_faculty" required>
+                                <option value="">Pilih Fakultas</option>
+                                <option v-for="faculty in faculties" :key="faculty.id_faculty"
+                                    :value="faculty.id_faculty">
+                                    {{ faculty.name_faculty }}
+                                </option>
+                            </select>
+    
+                            <InputError class="mt-2" :message="form.errors.id_faculty" />
                         </div>
                     </div>
                 </div>
 
-                <!-- Company/Location -->
-                <CompanyFormCard
-                    :categories="categories"
-                    :form="form"
-                    v-model="form.name_location"
-                    v-model:description="form.description"
-                    v-model:id_category="form.id_category"
-                />
-
-                <!-- Coordinates -->
-                <LocationPicker
-                    v-model:latitude="form.latitude"
-                    v-model:longitude="form.longitude"
-                    :errorLatitude="form.errors.latitude"
-                    :errorLongitude="form.errors.longitude"
-                />
-
-                <!-- Image Upload -->
-                <ImageUpload :form="form" />
-
                 <!-- Actions -->
                 <div class="pt-6 border-t border-neutral-200 dark:border-neutral-700">
                     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                        
+
                         <div class="text-sm text-neutral-500 dark:text-neutral-400">
                             <span class="text-primary font-medium">*</span> Wajib diisi
                         </div>
 
                         <div class="flex items-center gap-4">
-                            <Transition
-                                enter-active-class="transition-opacity duration-300"
-                                leave-active-class="transition-opacity duration-300"
-                                enter-from-class="opacity-0"
-                                leave-to-class="opacity-0"
-                            >
+                            <Transition enter-active-class="transition-opacity duration-300"
+                                leave-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
+                                leave-to-class="opacity-0">
                                 <p v-if="form.recentlySuccessful" class="text-sm text-success font-medium">
                                     <i class="fas fa-check-circle mr-1"></i>
                                     Permintaan berhasil dikirim!
@@ -252,7 +220,12 @@ const submit = () => {
 
 /* Responsive Adjustments */
 @media (max-width: 640px) {
-    .card-content { @apply p-4; }
-    .card-header { @apply px-4 py-3; }
+    .card-content {
+        @apply p-4;
+    }
+
+    .card-header {
+        @apply px-4 py-3;
+    }
 }
 </style>

@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\ReqLocation;
+namespace App\Http\Requests\Location;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreReqLocationRequest extends FormRequest
+class storeLocationRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -23,13 +23,30 @@ class StoreReqLocationRequest extends FormRequest
     {
         return [
             'student_name'   => 'required|string|max:255',
-            'nim'            => 'required|string|max:10',
-            'name_location'  => 'required|string|max:255',
+            'nim'            => [
+                'required',
+                'string',
+                'max:10',
+                'unique:locations,nim'
+            ],
+            'name_location'  => [
+                'required',
+                'string',
+                'max:255',
+                'unique:locations,name_location'
+            ],
             'description'    => 'required|string',
+            'contact' => [
+                'required',
+                'string',
+                'regex:/^(?:\+62|62|0)8[0-9]{7,11}$/'
+            ],
             'latitude'       => 'required|numeric',
             'longitude'      => 'required|numeric',
-            'id_category'    => 'required|exists:category,id_category',
-            'image'          => 'required|image|max:2048'
+            'images'         => 'nullable|array',
+            'images.*'      => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'id_category'    => 'required|exists:categories,id_category',
+            'id_department'    => 'required|exists:departments,id_department'
         ];
     }
 
@@ -40,12 +57,12 @@ class StoreReqLocationRequest extends FormRequest
             'nim.required'           => 'NIM wajib diisi.',
             'name_location.required' => 'Nama lokasi wajib diisi.',
             'description.required'   => 'Deskripsi wajib diisi.',
+            'contact.required'       => 'Kontak wajib diisi.',
+            'contact.regex'          => 'Format kontak tidak valid.',
             'latitude.required'      => 'Latitude wajib diisi.',
             'longitude.required'     => 'Longitude wajib diisi.',
             'id_category.required'   => 'Kategori wajib dipilih.',
-            'image.required'         => 'Gambar wajib diunggah.',
-            'image.image'            => 'File yang diunggah harus berupa gambar.',
-            'image.max'              => 'Ukuran gambar maksimal 2MB.'
+            'id_department.required'   => 'Departemen wajib dipilih.'
         ];
     }
 }

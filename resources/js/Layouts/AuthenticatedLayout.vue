@@ -82,6 +82,18 @@ watch(darkMode, (newValue) => {
                                 <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
                                     Dashboard
                                 </NavLink>
+                                <NavLink :href="route('locations.index')" :active="route().current('locations.index')">
+                                    Locations
+                                </NavLink>
+                                <NavLink :href="route('category.index')" :active="route().current('category.index')">
+                                    Categories
+                                </NavLink>
+                                <NavLink :href="route('faculty.index')" :active="route().current('faculty.index')">
+                                    Faculties
+                                </NavLink>
+                                <NavLink :href="route('department.index')" :active="route().current('department.index')">
+                                    Departments
+                                </NavLink>
                             </div>
                         </div>
 
@@ -154,6 +166,18 @@ watch(darkMode, (newValue) => {
                     <div class="space-y-1 pb-3 pt-2">
                         <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
                             Dashboard
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('locations.index')" :active="route().current('locations.index')">
+                            Locations
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('category.index')" :active="route().current('category.index')">
+                            Categories
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('faculty.index')" :active="route().current('faculty.index')">
+                            Faculties
+                        </ResponsiveNavLink>
+                        <ResponsiveNavLink :href="route('department.index')" :active="route().current('department.index')">
+                            Departments
                         </ResponsiveNavLink>
                     </div>
 
