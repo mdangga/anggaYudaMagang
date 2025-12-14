@@ -23,8 +23,8 @@ Route::get('/', function () {
     return Inertia::render('Homepage');
 });
 // route untuk location data
-Route::get('/get-location', [LocationController::class, 'getData'])->name('get-location');
 Route::prefix('locations')->group(function () {
+    Route::get('/get-locations', [LocationController::class, 'getData'])->name('get-location');
     Route::get('/', [LocationController::class, 'index'])->name('locations.index');
     Route::get('/create', [LocationController::class, 'create'])->middleware('signed')->name('locations.create');
     Route::post('/', [LocationController::class, 'store'])->name('locations.store');

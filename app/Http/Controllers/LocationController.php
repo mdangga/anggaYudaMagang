@@ -39,20 +39,14 @@ class LocationController extends Controller
         try {
             Log::info('getData function called');
 
-            $locations = DB::table('location')
-                ->join('category', 'location.id_category', '=', 'category.id_category')
-                ->select(
-                    'location.id_location',
-                    'location.name_location',
-                    'category.name_category AS category_name',
-                    'location.description',
-                    'location.latitude',
-                    'location.longitude',
-                    'location.image_path',
-                    'location.created_at',
-                    'location.updated_at'
-                )
-                ->get();
+            $locations = Locations::select('id_location', 'id_category', 'id_department', 'student_name', 'nim', 'name_location', 'description', 'contact', 'longitude', 'latitude')->with([
+                'category:id_category,name_category',
+                'department:id_department,name_department,id_faculty',
+                'department.faculty:id_faculty,name_faculty',
+                'images:id_image,id_location,image_path,alt_text'
+            ])
+            ->whereNotNull('approved_at') 
+            ->get();
 
             Log::info('Data fetched:', ['count' => $locations->count()]);
 
@@ -64,7 +58,6 @@ class LocationController extends Controller
             $locations = $locations->map(function ($loc) {
                 $loc->latitude = (float) $loc->latitude;
                 $loc->longitude = (float) $loc->longitude;
-                $loc->image_path = asset('storage/' . $loc->image_path);
                 return $loc;
             });
 

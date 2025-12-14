@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted, computed, watch, onUnmounted, inject } from 'vue'
-import { Head, Link, router } from '@inertiajs/vue3'
+import { Head } from '@inertiajs/vue3'
 import VueApexCharts from 'vue3-apexcharts'
 import MapComponent from '@/Components/Map.vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
@@ -8,7 +8,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 // Data state
 const locations = ref([])
 const categories = ref([])
-const pendingRequests = ref([])
 const searchQuery = ref('')
 const selectedLocation = ref(null)
 const filteredResults = ref([])
@@ -268,7 +267,6 @@ onMounted(async () => {
 
     // Fetch locations
     await getLocation()
-    await getLocationRequest()
     await getCategories()
 
     // Setup event listeners
@@ -298,7 +296,7 @@ onUnmounted(() => {
 
 async function getLocation() {
     try {
-        const res = await fetch('/get-location')
+        const res = await fetch('/locations/get-locations')
         if (!res.ok) throw new Error('Fetch failed')
         const data = await res.json()
         locations.value = Array.isArray(data) ? data : []
@@ -306,20 +304,6 @@ async function getLocation() {
     } catch (err) {
         console.error('Error loading locations:', err)
         locations.value = []
-        return []
-    }
-}
-
-async function getLocationRequest() {
-    try {
-        const res = await fetch('/request-locations/get-location?status=pending')
-        if (!res.ok) throw new Error('Fetch failed')
-        const data = await res.json()
-        pendingRequests.value = Array.isArray(data) ? data : []
-        return pendingRequests.value
-    } catch (err) {
-        console.error('Error loading locations request:', err)
-        pendingRequests.value = []
         return []
     }
 }
@@ -335,32 +319,6 @@ async function getCategories() {
         console.error('Error loading categories:', err)
         categories.value = []
         return []
-    }
-}
-
-async function approveRequest(id) {
-    try {
-        await router.post(route('request-locations.approve', id));
-        const idx = pendingRequests.value.findIndex(r => r.id_request === id || r.id === id)
-        if (idx !== -1) pendingRequests.value.splice(idx, 1)
-        await getLocation()
-        await getLocationRequest()
-        mapKey.value = Date.now()
-    } catch (err) {
-        console.error('Approve failed:', err)
-    }
-}
-
-async function rejectRequest(id) {
-    try {
-        await router.post(route('request-locations.destroy', id));
-        const idx = pendingRequests.value.findIndex(r => r.id_request === id || r.id === id)
-        if (idx !== -1) pendingRequests.value.splice(idx, 1)
-        await getLocation()
-        await getLocationRequest()
-        mapKey.value = Date.now()
-    } catch (err) {
-        console.error('Reject failed:', err)
     }
 }
 
@@ -417,7 +375,7 @@ watch(selectedLocation, (newLocation) => {
             </div>
 
             <!-- Main Content -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="grid grid-cols-1 gap-6">
                 <!-- Statistics Chart -->
                 <div
                     class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm p-5">
@@ -427,57 +385,6 @@ watch(selectedLocation, (newLocation) => {
                     </h3>
 
                     <VueApexCharts type="bar" height="300" :options="chartOptions" :series="series"></VueApexCharts>
-                </div>
-
-
-                <!-- Pending Requests -->
-                <div
-                    class="bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg overflow-hidden">
-                    <div class="p-4 flex items-center justify-between border-b border-gray-200 dark:border-slate-700">
-                        <h3 class="text-base font-semibold text-gray-700 dark:text-gray-50 flex items-center">
-                            <i class="fas fa-inbox mr-2"></i>
-                            Permintaan Tertunda
-                        </h3>
-                        <span
-                            class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold dark:bg-amber-800 dark:text-amber-100">
-                            {{ pendingRequests.length }}
-                        </span>
-                    </div>
-                    <div class="p-4 max-h-72 overflow-y-auto">
-                        <div v-if="pendingRequests.length === 0" class="p-8 text-center text-gray-400">
-                            <i class="fas fa-check-circle text-2xl"></i>
-                            <p class="mt-2">Tidak ada permintaan pending</p>
-                        </div>
-
-                        <div v-for="request in pendingRequests" :key="request.id"
-                            class="p-3 border border-gray-200 dark:border-slate-700 rounded mb-2 flex justify-between items-center transition hover:bg-gray-50 dark:hover:bg-slate-700">
-                            <div class="flex-1 min-w-0">
-                                <div class="font-semibold text-gray-700 truncate dark:text-gray-50">
-                                    {{ request.name_location }}
-                                </div>
-                                <div class="flex flex-wrap gap-3 text-sm text-gray-500 dark:text-gray-400 mt-1">
-                                    <span class="flex items-center">
-                                        <i class="fas fa-user mr-2"></i>{{ request.student_name }}
-                                    </span>
-                                    <span class="flex items-center">
-                                        <i class="fas fa-calendar mr-2"></i>{{ request.created_at }}
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="flex gap-2 ml-4">
-                                <button @click="approveRequest(request.id_request)"
-                                    class="w-8 h-8 rounded-md bg-green-500 hover:bg-green-600 text-white flex items-center justify-center transition-colors"
-                                    title="Setujui">
-                                    <i class="fas fa-check"></i>
-                                </button>
-                                <button @click="rejectRequest(request.id_request)"
-                                    class="w-8 h-8 rounded-md bg-red-500 hover:bg-red-600 text-white flex items-center justify-center transition-colors"
-                                    title="Tolak">
-                                    <i class="fas fa-times"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>

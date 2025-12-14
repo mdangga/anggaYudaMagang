@@ -50,6 +50,7 @@ const applyDarkMode = () => {
 }
 
 const selectLocation = (location) => {
+  console.log('Location selected:', location)
   selectedLocation.value = location
   showAutocomplete.value = false
   highlightedIndex.value = -1
@@ -156,7 +157,7 @@ const handleResize = () => {
 // Fetch data function
 async function getLocation() {
   try {
-    const res = await fetch('/get-location')
+    const res = await fetch('/locations/get-locations')
     if (!res.ok) throw new Error('Fetch failed')
     const data = await res.json()
     locations.value = Array.isArray(data) ? data : []
@@ -414,14 +415,14 @@ watch(selectedLocation, (newLocation) => {
       <div id="sidebar-footer" class="sidebar-footer border-t border-neutral-100 dark:border-neutral-700 p-3">
         <div class="flex items-center justify-between">
           <!-- Tambah Lokasi Button -->
-          <Link :href="route('request-locations.create')">
+          <!-- <Link :href="route('request-locations.create')">
             <button
               class="flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-primary hover:bg-opacity-20 dark:hover:bg-primary dark:hover:bg-opacity-20 transition-all duration-200 active:scale-95"
               title="Tambah Lokasi Baru">
               <i class="fas fa-map-marker-alt text-sm"></i>
               <span class="hidden md:inline text-sm font-medium">Tambah Lokasi</span>
             </button>
-          </Link>
+          </Link> -->
           
           <!-- Dark Mode Toggle Component -->
           <DarkModeToggle 
