@@ -1,0 +1,39 @@
+{
+  "id_location": 1,
+  "id_category": 1,
+  "id_department": 1,
+  "student_name": "dasmmasl",
+  "nim": "2313231069",
+  "name_location": "dsaamda",
+  "description": "dnakdskja",
+  "contact": "0895320801865",
+  "longitude": 115.2325,
+  "latitude": -8.639163,
+  "category": {
+    "id_category": 1,
+    "name_category": "Software House"
+  },
+  "department": {
+    "id_department": 1,
+    "name_department": "Informatika",
+    "id_faculty": 1,
+    "faculty": {
+      "id_faculty": 1,
+      "name_faculty": "Fakultas dsad"
+    }
+  },
+  "images": [
+    {
+      "id_image": 1,
+      "id_location": 1,
+      "image_path": "location_images/MBqMwvMpugLGlrfqXYZtMSIxLCsZLXyMenbqwo5v.jpg",
+      "alt_text": "msamda"
+    },
+    {
+      "id_image": 2,
+      "id_location": 1,
+      "image_path": "location_images/dk8pfJDYtmWZovDXR6vEYhA5vhfU5xZ0ugg0QeC5.jpg",
+      "alt_text": "mdakada"
+    }
+  ]
+}

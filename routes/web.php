@@ -25,6 +25,7 @@ Route::get('/', function () {
 // route untuk location data
 Route::prefix('locations')->group(function () {
     Route::get('/get-locations', [LocationController::class, 'getData'])->name('get-location');
+    Route::get('/get-locations/{id}', [LocationController::class, 'getDataById'])->name('get-location-by-id');
     Route::get('/', [LocationController::class, 'index'])->name('locations.index');
     Route::get('/create', [LocationController::class, 'create'])->middleware('signed')->name('locations.create');
     Route::post('/', [LocationController::class, 'store'])->name('locations.store');

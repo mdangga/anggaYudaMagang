@@ -81,7 +81,7 @@ const addMarkers = () => {
       .bindPopup(`
         <div class="p-3 min-w-[180px]">
           <h3 class="font-bold text-neutral-900 dark:text-white text-sm mb-1">${location.name_location}</h3>
-          <p class="text-xs text-neutral-600 dark:text-neutral-400 mb-2">${location.category_name}</p>
+          <p class="text-xs text-neutral-600 dark:text-neutral-400 mb-2">${location.category.name_category}</p>
         </div>
       `)
 

@@ -18,9 +18,9 @@ const mapComponentRef = ref(null)
 
 provide('darkMode', darkMode)
 provide('toggleDarkMode', (value) => {
-    darkMode.value = value !== undefined ? value : !darkMode.value
-    applyDarkMode()
-    localStorage.setItem('theme', darkMode.value ? 'dark' : 'light')
+  darkMode.value = value !== undefined ? value : !darkMode.value
+  applyDarkMode()
+  localStorage.setItem('theme', darkMode.value ? 'dark' : 'light')
 })
 
 // Computed
@@ -40,27 +40,37 @@ const checkMobile = () => {
 }
 
 const toggleDarkMode = (newValue) => {
-    darkMode.value = newValue
-    localStorage.setItem('theme', darkMode.value ? 'dark' : 'light')
-    applyDarkMode()
+  darkMode.value = newValue
+  localStorage.setItem('theme', darkMode.value ? 'dark' : 'light')
+  applyDarkMode()
 }
 
 const applyDarkMode = () => {
-    document.documentElement.classList.toggle('dark', darkMode.value)
+  document.documentElement.classList.toggle('dark', darkMode.value)
 }
 
-const selectLocation = (location) => {
-  console.log('Location selected:', location)
-  selectedLocation.value = location
-  showAutocomplete.value = false
-  highlightedIndex.value = -1
+const selectLocation = async (location) => {
+  selectedLocation.value = location;
+  showAutocomplete.value = false;
+  highlightedIndex.value = -1;
 
-  // Open sidebar on mobile
-  if (isMobile.value) sidebarOpen.value = true
+  if (isMobile.value) sidebarOpen.value = true;
 
-  const footer = document.getElementById('sidebar-footer')
-  if (footer) footer.classList.add('hidden')
+  const footer = document.getElementById('sidebar-footer');
+  if (footer) footer.classList.add('hidden');
+
+  try {
+    console.log('Fetching location detail for ID:', location.id_location);
+    const response = await fetch(`/locations/get-locations/${location.id_location}`);
+    if (!response.ok) throw new Error('Failed to fetch location detail');
+    const data = await response.json();
+    console.log('Location detail fetched:', data);
+    selectedLocation.value = data;
+  } catch (error) {
+    console.error('Error fetching location detail:', error);
+  }
 }
+
 
 const clearSelection = () => {
   selectedLocation.value = null
@@ -242,10 +252,11 @@ watch(selectedLocation, (newLocation) => {
 </script>
 
 <template>
+
   <Head title="Home" />
   <div
     :class="['h-screen flex flex-col md:flex-row overflow-hidden', darkMode ? 'dark bg-neutral-900' : 'bg-neutral-50']">
-    
+
     <!-- Overlay untuk mobile saat sidebar terbuka -->
     <div v-if="isMobile && sidebarOpen" @click="toggleSidebar"
       class="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300"
@@ -269,7 +280,7 @@ watch(selectedLocation, (newLocation) => {
         sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
       ]
     ]">
-      
+
       <!-- Header/Brand -->
       <div class="brand-section p-4 md:p-5 border-b border-neutral-100 dark:border-neutral-700">
         <div class="flex items-center justify-between">
@@ -296,7 +307,7 @@ watch(selectedLocation, (newLocation) => {
 
       <!-- Detail Panel -->
       <div class="detail-panel flex-1 p-3 md:p-4 flex flex-col">
-        
+
         <!-- Empty State -->
         <div v-if="!selectedLocation"
           class="empty-card bg-white dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700 shadow-sm">
@@ -318,11 +329,13 @@ watch(selectedLocation, (newLocation) => {
         <!-- Detail Card -->
         <div v-else
           class="detail-card bg-white dark:bg-neutral-800 rounded-xl overflow-hidden shadow-lg border border-neutral-100 dark:border-neutral-700">
-          
+
           <!-- Thumbnail -->
           <div class="relative">
-            <img :src="selectedLocation.image_path || 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&h=200&fit=crop'"
-              :alt="selectedLocation.name_location" class="w-full h-40 md:h-48 object-cover" />
+            <div v-for="img in selectedLocation.images" :key="img.id_image">
+              <img :src="`/storage/${img.image_path}`" :alt="img.alt_text || 'Image'" width="100" />
+            </div>
+            
             <!-- Tombol tutup card -->
             <button @click="clearSelection"
               class="absolute top-2 right-2 w-8 h-8 bg-white/90 dark:bg-neutral-800/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white dark:hover:bg-neutral-700 transition-colors">
@@ -339,7 +352,7 @@ watch(selectedLocation, (newLocation) => {
               </h2>
               <div class="flex items-center justify-between">
                 <p class="detail-subtitle text-xs md:text-sm text-neutral-500 dark:text-neutral-400">
-                  {{ selectedLocation.category_name }}
+                  {{ selectedLocation.category.name_category }}
                 </p>
                 <span class="text-xs text-neutral-400 dark:text-neutral-500">
                   {{ formatDate(selectedLocation.created_at) }}
@@ -382,7 +395,8 @@ watch(selectedLocation, (newLocation) => {
 
             <!-- Additional Info -->
             <div class="additional-info border-t border-neutral-100 dark:border-neutral-700 pt-3 md:pt-4">
-              <h4 class="text-xs md:text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 md:mb-3 flex items-center gap-2">
+              <h4
+                class="text-xs md:text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 md:mb-3 flex items-center gap-2">
                 <i class="fas fa-info-circle text-info"></i>
                 Detail Lokasi
               </h4>
@@ -423,12 +437,9 @@ watch(selectedLocation, (newLocation) => {
               <span class="hidden md:inline text-sm font-medium">Tambah Lokasi</span>
             </button>
           </Link> -->
-          
+
           <!-- Dark Mode Toggle Component -->
-          <DarkModeToggle 
-            v-model="darkMode" 
-            @toggle="toggleDarkMode"
-          />
+          <DarkModeToggle v-model="darkMode" @toggle="toggleDarkMode" />
         </div>
       </div>
     </aside>
@@ -436,38 +447,32 @@ watch(selectedLocation, (newLocation) => {
     <!-- Main Content Area -->
     <main class="flex-1 relative">
       <!-- Map Component -->
-      <MapComponent 
-        ref="mapComponentRef"
-        :locations="locations"
-        :selected-location="selectedLocation"
-        :dark-mode="darkMode"
-        :sidebar-open="sidebarOpen"
-        @location-selected="selectLocation"
-        @map-initialized="onMapInitialized"
-      >
+      <MapComponent ref="mapComponentRef" :locations="locations" :selected-location="selectedLocation"
+        :dark-mode="darkMode" :sidebar-open="sidebarOpen" @location-selected="selectLocation"
+        @map-initialized="onMapInitialized">
         <!-- Search Bar Overlay -->
-        <div class="flex sm:flex-row md:inline search-container absolute top-3 md:top-4 left-3 md:left-4 right-3 md:right-4 z-40 transition-all duration-200"
+        <div
+          class="flex sm:flex-row md:inline search-container absolute top-3 md:top-4 left-3 md:left-4 right-3 md:right-4 z-40 transition-all duration-200"
           :class="sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'">
-          
+
           <!-- Mobile Sidebar Toggle Button -->
           <button v-if="isMobile" @click.stop="toggleSidebar"
             class="md:hidden w-10 h-10 absolute bg-primary hover:bg-primary-dark text-neutral-900 rounded-xl shadow-lg">
             <i class="fas fa-bars text-lg w-4 h-4"></i>
           </button>
-          
+
           <div class="search-box relative max-w-2xl max-h-10 mx-auto">
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <i class="fas fa-search text-neutral-400 text-sm md:text-base"></i>
               </div>
               <input v-model="searchQuery" @input="handleSearch" @focus="showAutocomplete = true"
-                @keydown.down="highlightNext" @keydown.up="highlightPrev"
-                @keydown.enter="selectHighlighted" @keydown.esc="showAutocomplete = false" type="text"
-                placeholder="Cari lokasi magang..."
+                @keydown.down="highlightNext" @keydown.up="highlightPrev" @keydown.enter="selectHighlighted"
+                @keydown.esc="showAutocomplete = false" type="text" placeholder="Cari lokasi magang..."
                 class="w-full pl-9 md:pl-10 pr-9 md:pr-10 py-2.5 md:py-3 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm rounded-xl border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent shadow-lg text-sm md:text-base" />
-              <button v-if="searchQuery" @click="clearSearch"
-                class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <i class="fas fa-times text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 text-sm md:text-base"></i>
+              <button v-if="searchQuery" @click="clearSearch" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <i
+                  class="fas fa-times text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 text-sm md:text-base"></i>
               </button>
             </div>
 
@@ -482,7 +487,8 @@ watch(selectedLocation, (newLocation) => {
                     : 'hover:bg-neutral-50 dark:hover:bg-neutral-700'
                 ]">
                 <div class="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden">
-                  <img :src="location.image_path || 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=100&h=100&fit=crop'"
+                  <img
+                    :src="location.image_path || 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=100&h=100&fit=crop'"
                     :alt="location.name_location" class="w-full h-full object-cover" />
                 </div>
                 <div class="flex-1 min-w-0">
@@ -490,7 +496,7 @@ watch(selectedLocation, (newLocation) => {
                     {{ location.name_location }}
                   </h4>
                   <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                    {{ location.category_name }} · Klik untuk lihat detail
+                    {{ location.category.name_category }} · Klik untuk lihat detail
                   </p>
                 </div>
               </div>
@@ -504,7 +510,8 @@ watch(selectedLocation, (newLocation) => {
             class="bg-white dark:bg-neutral-800 rounded-xl p-3 shadow-lg border border-neutral-200 dark:border-neutral-600 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
+                <div
+                  class="w-8 h-8 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
                   <i class="fas fa-map-marker-alt text-white text-xs"></i>
                 </div>
                 <div class="min-w-0">
@@ -647,6 +654,7 @@ watch(selectedLocation, (newLocation) => {
   from {
     transform: translateX(-100%);
   }
+
   to {
     transform: translateX(0);
   }
@@ -656,6 +664,7 @@ watch(selectedLocation, (newLocation) => {
   from {
     transform: translateX(0);
   }
+
   to {
     transform: translateX(-100%);
   }

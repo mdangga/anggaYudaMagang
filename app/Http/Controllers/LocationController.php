@@ -6,10 +6,7 @@ use App\Http\Requests\Location\storeLocationRequest;
 use App\Models\Categories;
 use App\Models\Faculties;
 use App\Models\Images;
-use App\Models\Location;
 use App\Models\Locations;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
@@ -39,14 +36,21 @@ class LocationController extends Controller
         try {
             Log::info('getData function called');
 
-            $locations = Locations::select('id_location', 'id_category', 'id_department', 'student_name', 'nim', 'name_location', 'description', 'contact', 'longitude', 'latitude')->with([
-                'category:id_category,name_category',
-                'department:id_department,name_department,id_faculty',
-                'department.faculty:id_faculty,name_faculty',
-                'images:id_image,id_location,image_path,alt_text'
-            ])
-            ->whereNotNull('approved_at') 
-            ->get();
+            $locations = Locations::select(
+                'id_location',
+                'id_category',
+                'name_location',
+                'description',
+                'latitude',
+                'longitude',
+                'created_at'
+            )
+                ->with([
+                    'category:id_category,name_category',
+                    'images:id_location,image_path'
+                ])
+                ->whereNotNull('approved_at')
+                ->get();
 
             Log::info('Data fetched:', ['count' => $locations->count()]);
 
@@ -62,6 +66,31 @@ class LocationController extends Controller
             });
 
             return response()->json($locations);
+        } catch (\Exception $e) {
+            Log::error('Error in getData:', ['error' => $e->getMessage()]);
+            return response()->json([
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    //? method to get location data json
+    public function getDataById($id)
+    {
+        try {
+            Log::info('getData function called');
+
+            $location = Locations::select('id_location', 'id_category', 'id_department', 'student_name', 'nim', 'name_location', 'description', 'contact', 'longitude', 'latitude', 'created_at')->with([
+                'category:id_category,name_category',
+                'department:id_department,name_department,id_faculty',
+                'department.faculty:id_faculty,name_faculty',
+                'images:id_image,id_location,image_path,alt_text'
+            ])->findOrFail($id);
+
+            $location->latitude = (float) $location->latitude;
+            $location->longitude = (float) $location->longitude;
+
+            return response()->json($location);
         } catch (\Exception $e) {
             Log::error('Error in getData:', ['error' => $e->getMessage()]);
             return response()->json([
