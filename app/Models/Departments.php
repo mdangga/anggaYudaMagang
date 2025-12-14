@@ -20,7 +20,7 @@ class Departments extends Model
         return $this->belongsTo(Faculties::class, 'id_faculty', 'id_faculty');
     }
 
-    public function location()
+    public function locations()
     {
         return $this->hasMany(Locations::class, 'id_department', 'id_department');
     }

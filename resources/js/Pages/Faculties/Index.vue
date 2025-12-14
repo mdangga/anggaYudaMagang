@@ -1,23 +1,82 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import { Head, Link } from '@inertiajs/vue3'
-import { ref, inject } from 'vue'
+import ModalDelete from '@/Components/ModalDelete.vue'
+import { Head, Link, router } from '@inertiajs/vue3'
+import { ref, inject, computed } from 'vue'
 
-defineProps({
+const props = defineProps({
     faculties: Object
 })
 
-const showDetailModal = ref(false)
-const selectedLocation = ref(null)
+const showDeleteModal = ref(false)
+const deleting = ref(false)
+const itemIdToDelete = ref(null)
+const itemName = ref('')
 
 // Inject dark mode dari layout
 const darkMode = inject('darkMode', ref(false))
 const toggleDarkMode = inject('toggleDarkMode', () => { })
+
+const openDeleteModal = (id, name) => {
+    itemIdToDelete.value = id
+    itemName.value = name
+    showDeleteModal.value = true
+}
+
+const closeDeleteModal = () => {
+    if (!deleting.value) {
+        showDeleteModal.value = false
+        itemIdToDelete.value = null
+        itemName.value = ''
+    }
+}
+
+const selectedFaculty = computed(() => {
+    if (!itemIdToDelete.value) return null
+    return props.faculties.data.find(
+        c => c.id_faculty === itemIdToDelete.value
+    )
+})
+
+const warningMessage = computed(() => {
+    if (!selectedFaculty.value) {
+        return 'Data yang dihapus tidak dapat dikembalikan.'
+    }
+
+    if (selectedFaculty.value.departments_count > 0) {
+        return `Fakultas ini memiliki ${selectedFaculty.value.departments_count} jurusan. Menghapus fakultas akan mempengaruhi data terkait.`
+    }
+
+    return 'Data yang dihapus tidak dapat dikembalikan.'
+})
+
+const deleteMessage = computed(() => {
+    return `Apakah Anda yakin ingin menghapus fakultas "${itemName.value}"? Tindakan ini tidak dapat dibatalkan.`
+})
+
+const deleteItem = () => {
+    deleting.value = true
+
+    router.delete(route('faculty.destroy', itemIdToDelete.value), {
+        preserveScroll: true,
+        onSuccess: () => {
+            showDeleteModal.value = false
+            itemIdToDelete.value = null
+            itemName.value = ''
+        },
+        onError: (errors) => {
+            console.error('Delete error:', errors)
+        },
+        onFinish: () => {
+            deleting.value = false
+        }
+    })
+}
 </script>
 
 <template>
 
-    <Head title="Daftar Lokasi Magang" />
+    <Head title="Daftar Fakultas" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -32,30 +91,28 @@ const toggleDarkMode = inject('toggleDarkMode', () => { })
                 </div>
 
                 <Link :href="route('faculty.create')"
-                    class="group relative inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-gradient-to-l from-primary-300 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ease-out overflow-hidden"
-                    :class="{ 'opacity-70 cursor-not-allowed pointer-events-none': loading }" :disabled="loading"
-                    preserve-scroll>
+                    class="group relative inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-l from-primary-300 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-out overflow-hidden">
+
                     <!-- Shimmer Effect -->
                     <div
                         class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
                     </div>
 
                     <!-- Add Icon -->
-                    <svg
-                        class="w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                    <svg class="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
 
                     <!-- Button Text -->
-                    <span class="relative">
+                    <span class="relative text-sm">
                         Tambah Fakultas
                     </span>
 
                     <!-- Tooltip -->
                     <div
-                        class="absolute bottom-full mb-2 hidden group-hover:block px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap">
-                        Tambah fakultas baru
+                        class="absolute bottom-full mb-2 hidden group-hover:block px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
+                        Tambah Fakultas Baru
                         <div
                             class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900">
                         </div>
@@ -75,6 +132,7 @@ const toggleDarkMode = inject('toggleDarkMode', () => { })
                                     <tr>
                                         <th class="th">No</th>
                                         <th class="th">Nama Fakultas</th>
+                                        <th class="th">Total Jurusan</th>
                                         <th class="th text-center">Aksi</th>
                                     </tr>
                                 </thead>
@@ -88,13 +146,52 @@ const toggleDarkMode = inject('toggleDarkMode', () => { })
                                         <td class="td">
                                             {{ item.name_faculty }}
                                         </td>
+                                        <td class="td">
+                                            {{ item.departments_count }}
+                                        </td>
                                         <td class="td text-start space-x-2">
                                             <Link :href="route('faculty.edit', item.id_faculty)"
-                                                class="btn btn-secondary">
-                                                Edit
+                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-info-300 to-info-600 hover:from-info-600 hover:to-info-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
+
+                                                <!-- Shimmer Effect -->
+                                                <div
+                                                    class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
+                                                </div>
+
+                                                <!-- Edit Icon -->
+                                                <svg class="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                </svg>
+
+                                                <!-- Button Text -->
+                                                <span class="relative">
+                                                    Edit
+                                                </span>
                                             </Link>
-                                            <button class="btn btn-danger">
-                                                Hapus
+
+                                            <button @click="openDeleteModal(item.id_faculty, item.name_faculty)"
+                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-danger-300 to-danger-600 hover:from-danger-600 hover:to-danger-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
+
+                                                <!-- Shimmer Effect -->
+                                                <div
+                                                    class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
+                                                </div>
+
+                                                <!-- Trash Icon -->
+                                                <svg class="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+
+                                                <!-- Button Text -->
+                                                <span class="relative">
+                                                    Hapus
+                                                </span>
                                             </button>
                                         </td>
                                     </tr>
@@ -123,6 +220,11 @@ const toggleDarkMode = inject('toggleDarkMode', () => { })
                 </div>
             </div>
         </div>
+
+        <ModalDelete :show="showDeleteModal" :title="`Hapus Fakultas ${itemName}?`" :message="deleteMessage"
+            :warning-message="warningMessage" :loading="deleting" @close="closeDeleteModal" @confirm="deleteItem"
+            confirm-text="Hapus" />
+
     </AuthenticatedLayout>
 </template>
 

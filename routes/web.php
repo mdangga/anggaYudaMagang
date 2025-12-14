@@ -48,7 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('locations')->group(function () {
         Route::post('/generate-link', [LocationController::class, 'generate'])->name('locations.generate-link');
         Route::post('/{id}/approve', [LocationController::class, 'approve'])->name('locations.approve');
-        Route::post('/{id}/destroy', [LocationController::class, 'destroy'])->name('locations.destroy');
+        Route::delete('/{id}', [LocationController::class, 'destroy'])->name('locations.destroy');
     });
 
     // category management routes

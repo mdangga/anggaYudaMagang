@@ -1,10 +1,11 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
+import ModalDelete from '@/Components/ModalDelete.vue'
 import { Head, router } from '@inertiajs/vue3'
-import { ref, inject } from 'vue'
+import { ref, computed } from 'vue'
 import axios from 'axios'
 
-defineProps({
+const props = defineProps({
     locations: Object
 })
 
@@ -16,9 +17,10 @@ const error = ref(null)
 const showDetailModal = ref(false)
 const selectedLocation = ref(null)
 
-// Inject dark mode dari layout
-const darkMode = inject('darkMode', ref(false))
-const toggleDarkMode = inject('toggleDarkMode', () => { })
+const showDeleteModal = ref(false)
+const deleting = ref(false)
+const itemIdToDelete = ref(null)
+const itemName = ref('')
 
 // Function untuk generate QR Code
 const generateQrCode = async () => {
@@ -29,37 +31,27 @@ const generateQrCode = async () => {
         const response = await axios.post(`/locations/generate-link`)
 
         if (response.data.link) {
+            // Gunakan API QR code sebenarnya jika tersedia
+            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(response.data.link)}`
+
             qrData.value = {
                 link: response.data.link,
-                qrCode: await generateQRCodeImage(response.data.link),
-                timestamp: new Date().toLocaleString()
+                qrCode: qrCodeUrl,
+                timestamp: new Date().toLocaleString(),
+                locationId: response.data.location_id || 'unknown' // Tambahkan locationId
             }
             showQrModal.value = true
         }
     } catch (err) {
         console.error('Error generating QR:', err)
         error.value = 'Gagal generate QR Code. Silakan coba lagi.'
-
-        // Tampilkan alert error
         alert(error.value)
     } finally {
         loading.value = false
     }
 }
 
-const generateQRCodeImage = async (link) => {
-    // import QRCode from 'qrcode'
-    // const qrCode = await QRCode.toDataURL(link)
-    // return qrCode
-    try {
-        const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`
-        return qrCodeUrl
-    } catch (error) {
-        console.error('Error generating QR image:', error)
-        return null
-    }
-}
-
+// Fungsi untuk download QR Code
 const downloadQRCode = () => {
     if (!qrData.value) return
 
@@ -71,6 +63,7 @@ const downloadQRCode = () => {
     document.body.removeChild(downloadLink)
 }
 
+// Fungsi untuk copy link
 const copyLink = () => {
     if (!qrData.value) return
 
@@ -84,6 +77,20 @@ const copyLink = () => {
         })
 }
 
+// Fungsi untuk share via WhatsApp
+const shareViaWhatsApp = (link) => {
+    const text = `Isi form lokasi magang di sini: ${link}`
+    const url = `https://wa.me/?text=${encodeURIComponent(text)}`
+    window.open(url, '_blank')
+}
+
+// Fungsi untuk share via Telegram
+const shareViaTelegram = (link) => {
+    const text = `Isi form lokasi magang di sini: ${link}`
+    const url = `https://t.me/share/url?url=${encodeURIComponent(link)}&text=${encodeURIComponent(text)}`
+    window.open(url, '_blank')
+}
+
 const openDetailModal = (location) => {
     selectedLocation.value = location
     showDetailModal.value = true
@@ -94,13 +101,57 @@ const closeDetailModal = () => {
     selectedLocation.value = null
 }
 
-async function approveRequest(id) {
-    try {
-        await router.post(route('locations.approve', id));
-        closeDetailModal();
-    } catch (err) {
-        console.error('Approve failed:', err)
+const openDeleteModal = (id, name) => {
+    itemIdToDelete.value = id
+    itemName.value = name
+    showDeleteModal.value = true
+}
+
+const closeDeleteModal = () => {
+    if (!deleting.value) {
+        showDeleteModal.value = false
+        itemIdToDelete.value = null
+        itemName.value = ''
     }
+}
+
+const selectedLoc = computed(() => {
+    if (!itemIdToDelete.value || !props.locations?.data) return null
+    return props.locations.data.find(
+        location => location.id === itemIdToDelete.value
+    )
+})
+
+// DIUBAH: Ganti 'warningMessage' untuk lokasi
+const warningMessage = computed(() => {
+    return 'Data yang dihapus tidak dapat dikembalikan.'
+})
+
+// DIUBAH: Ganti pesan delete untuk lokasi
+const deleteMessage = computed(() => {
+    return `Apakah Anda yakin ingin menghapus lokasi "${itemName.value}"? Tindakan ini tidak dapat dibatalkan.`
+})
+
+// DIUBAH: Ganti fungsi delete untuk lokasi
+const deleteItem = () => {
+    deleting.value = true
+
+    router.delete(route('locations.destroy', itemIdToDelete.value), {
+        preserveScroll: true,
+        preserveState: true,
+        onSuccess: () => {
+            showDeleteModal.value = false
+            itemIdToDelete.value = null
+            itemName.value = ''
+        },
+        onError: (errors) => {
+            console.error('Delete error:', errors)
+            alert('Gagal menghapus data. Silakan coba lagi.')
+        },
+        onFinish: () => {
+            deleting.value = false
+        }
+    })
 }
 </script>
 
@@ -121,14 +172,16 @@ async function approveRequest(id) {
                 </div>
 
                 <button @click="generateQrCode()" :disabled="loading"
-                    class="group relative inline-flex items-center justify-center gap-3 px-6 py-3.5 bg-gradient-to-l from-primary-300 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 ease-out overflow-hidden"
+                    class="group relative inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-l from-primary-300 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-out overflow-hidden"
                     :class="{ 'opacity-70 cursor-not-allowed': loading }">
 
+                    <!-- Shimmer Effect -->
                     <div
                         class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
                     </div>
 
-                    <svg v-if="loading" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none"
+                    <!-- Loading Spinner -->
+                    <svg v-if="loading" class="animate-spin h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none"
                         viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
                         </circle>
@@ -137,19 +190,22 @@ async function approveRequest(id) {
                         </path>
                     </svg>
 
+                    <!-- QR Code Icon -->
                     <svg v-else
-                        class="w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                        class="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
 
-                    <span class="relative">
+                    <!-- Button Text -->
+                    <span class="relative text-sm">
                         {{ loading ? 'Memproses...' : 'Generate QR' }}
                     </span>
 
+                    <!-- Tooltip -->
                     <div
-                        class="absolute bottom-full mb-2 hidden group-hover:block px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap">
+                        class="absolute bottom-full mb-2 hidden group-hover:block px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
                         Generate QR Code
                         <div
                             class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900">
@@ -226,12 +282,49 @@ async function approveRequest(id) {
                                             </span>
                                         </td>
                                         <td class="td text-center gap-2 flex justify-center">
-                                            <button @click="openDetailModal(item)" class="btn btn-secondary">
-                                                Detail
+                                            <button @click="openDetailModal(item)"
+                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-danger-300 to-danger-600 hover:from-danger-600 hover:to-danger-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
+
+                                                <!-- Shimmer Effect -->
+                                                <div
+                                                    class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
+                                                </div>
+
+                                                <!-- Document Icon -->
+                                                <svg xmlns="http://www.w3.org/2000/svg"
+                                                    class="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path fill="currentColor"
+                                                        d="M20 3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2m-9 14H5v-2h6zm8-4H5v-2h14zm0-4H5V7h14z" />
+                                                </svg>
+
+                                                <!-- Button Text -->
+                                                <span class="relative">
+                                                    Detail
+                                                </span>
                                             </button>
-                                            <button class="btn btn-danger">
-                                                Hapus
+                                            <button @click="openDeleteModal(item.id_location, item.name_location)"
+                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-danger-300 to-danger-600 hover:from-danger-600 hover:to-danger-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
+
+                                                <!-- Shimmer Effect -->
+                                                <div
+                                                    class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
+                                                </div>
+
+                                                <!-- Trash Icon -->
+                                                <svg class="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
+                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round"
+                                                        stroke-width="2"
+                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+
+                                                <!-- Button Text -->
+                                                <span class="relative">
+                                                    Hapus
+                                                </span>
                                             </button>
+
                                         </td>
                                     </tr>
 
@@ -281,7 +374,7 @@ async function approveRequest(id) {
                 <div class="p-6">
                     <div v-if="qrData" class="space-y-4">
                         <div class="flex justify-center">
-                            <div class="border-2 border-gray-200 dark:border-neutral-700 p-4 rounded-lg">
+                            <div class="bg-white border-2 border-gray-200 dark:border-neutral-700 p-4 rounded-lg">
                                 <img :src="qrData.qrCode" alt="QR Code" class="w-64 h-64" @error="qrData.qrCode = null">
 
                                 <div v-if="!qrData.qrCode"
@@ -309,6 +402,33 @@ async function approveRequest(id) {
                             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
                                 Link ini akan kadaluarsa sesuai waktu yang ditentukan
                             </p>
+                        </div>
+
+                        <div v-if="qrData?.link" class="mt-4">
+                            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300 mb-2">
+                                Bagikan Link
+                            </label>
+
+                            <div class="flex flex-wrap gap-2">
+                                <button @click="shareViaWhatsApp(qrData.link)"
+                                    class="flex items-center gap-2 px-2 py-2 bg-green-500 text-white rounded-full text-sm hover:bg-green-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24">
+                                        <path fill="currentColor"
+                                            d="M17.6 6.32A7.85 7.85 0 0 0 12 4a7.94 7.94 0 0 0-6.88 11.89L4 20l4.2-1.1a7.9 7.9 0 0 0 3.79 1a8 8 0 0 0 8-7.93a8 8 0 0 0-2.39-5.65M12 18.53a6.6 6.6 0 0 1-3.36-.92l-.24-.15l-2.49.66l.66-2.43l-.16-.25a6.6 6.6 0 0 1 10.25-8.17a6.65 6.65 0 0 1 2 4.66a6.66 6.66 0 0 1-6.66 6.6m3.61-4.94c-.2-.1-1.17-.58-1.35-.64s-.32-.1-.45.1a9 9 0 0 1-.63.77c-.11.14-.23.15-.43 0a5.33 5.33 0 0 1-2.69-2.35c-.21-.35.2-.33.58-1.08a.38.38 0 0 0 0-.35c0-.1-.45-1.08-.61-1.47s-.32-.33-.45-.34h-.39a.7.7 0 0 0-.53.25A2.2 2.2 0 0 0 8 10.17a3.8 3.8 0 0 0 .81 2.05a8.9 8.9 0 0 0 3.39 3a3.85 3.85 0 0 0 2.38.5a2 2 0 0 0 1.33-.94a1.6 1.6 0 0 0 .12-.94c-.09-.1-.22-.15-.42-.25" />
+                                    </svg>
+                                </button>
+
+                                <button @click="shareViaTelegram(qrData.link)"
+                                    class="flex items-center gap-2 px-2 py-2 bg-sky-500 text-white rounded-full text-sm hover:bg-sky-600">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" viewBox="0 0 24 24">
+                                        <path fill="currentColor"
+                                            d="m16.463 8.846l-1.09 6.979a.588.588 0 0 1-.894.407l-3.65-2.287a.588.588 0 0 1-.095-.923l3.03-2.904c.034-.032-.006-.085-.046-.061l-4.392 2.628a1.23 1.23 0 0 1-.87.153l-1.59-.307c-.574-.111-.653-.899-.114-1.122l8.502-3.515a.882.882 0 0 1 1.21.952" />
+                                        <path fill="currentColor" fill-rule="evenodd"
+                                            d="M12 1.706C6.315 1.706 1.706 6.315 1.706 12S6.315 22.294 12 22.294S22.294 17.685 22.294 12S17.685 1.706 12 1.706M3.47 12a8.53 8.53 0 1 1 17.06 0a8.53 8.53 0 0 1-17.06 0"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Timestamp -->
@@ -635,7 +755,8 @@ async function approveRequest(id) {
 
                 </div>
 
-                <div class="px-6 py-4 border-t border-gray-200 dark:border-neutral-700 flex justify-end flex-shrink-0 gap-3">
+                <div
+                    class="px-6 py-4 border-t border-gray-200 dark:border-neutral-700 flex justify-end flex-shrink-0 gap-3">
                     <button @click="approveRequest(selectedLocation.id_location)" v-if="!selectedLocation.approved_at"
                         class="px-5 py-2 rounded-md bg-green-600 hover:bg-green-500 text-white flex items-center justify-center transition-colors"
                         title="Setujui">
@@ -648,6 +769,11 @@ async function approveRequest(id) {
                 </div>
             </div>
         </div>
+
+        <!-- Modal Delete -->
+        <ModalDelete :show="showDeleteModal" :title="`Hapus Lokasi ${itemName}?`" :message="deleteMessage"
+            :warning-message="warningMessage" :loading="deleting" @close="closeDeleteModal" @confirm="deleteItem"
+            confirm-text="Hapus" />
     </AuthenticatedLayout>
 </template>
 

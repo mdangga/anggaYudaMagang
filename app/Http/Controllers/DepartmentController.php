@@ -13,7 +13,13 @@ class DepartmentController extends Controller
 {
     public function index()
     {
-        $departments = Departments::with(['Faculty:id_faculty,name_faculty'])->paginate(10);
+        $departments = Departments::query()
+            ->with([
+                'faculty:id_faculty,name_faculty'
+            ])
+            ->withCount('locations')
+            ->paginate(10);
+
 
         return Inertia::render('Departments/Index', [
             'departments' => $departments,
@@ -23,7 +29,8 @@ class DepartmentController extends Controller
     public function create()
     {
         $faculties = Faculties::all();
-        return Inertia::render('Departments/Add',
+        return Inertia::render(
+            'Departments/Add',
             [
                 'faculties' => $faculties,
             ]

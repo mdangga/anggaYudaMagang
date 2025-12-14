@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, inject } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 
 import Checkbox from '@/Components/Checkbox.vue';
@@ -11,6 +11,10 @@ import TextInput from '@/Components/TextInput.vue';
 
 const showPassword = ref(false);
 const passwordInput = ref(null);
+
+// Inject dark mode dari layout
+const darkMode = inject('darkMode', ref(false))
+const toggleDarkMode = inject('toggleDarkMode', () => { })
 
 defineProps({
     canResetPassword: { type: Boolean },

@@ -81,14 +81,17 @@ const submit = () => {
             <div class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
                     <div
-                        class="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
-                        <i class="fas fa-map-marker-alt text-white text-lg"></i>
+                        class="w-10 h-10 rounded-lg bg-primary dark:bg-primary-dark flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                            <path fill="currentColor" class="w-7 h-7 text-white dark:text-neutral-900"
+                                d="M2 2h9v9H2zm15.5 0C20 2 22 4 22 6.5S20 11 17.5 11S13 9 13 6.5S15 2 17.5 2m-11 12l4.5 8H2zM19 17h3v2h-3v3h-2v-3h-3v-2h3v-3h2z" />
+                        </svg>
                     </div>
 
                     <div>
-                        <h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Tambah Kategori</h1>
+                        <h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Edit Kategori</h1>
                         <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
-                            Tambahkan kategori magang baru
+                            Edit kategori yang sudah ada pada sistem.
                         </p>
                     </div>
                 </div>

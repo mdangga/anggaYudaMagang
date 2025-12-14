@@ -13,7 +13,7 @@ class Faculties extends Model
         'name_faculty',
     ];
 
-    public function department()
+    public function departments()
     {
         return $this->hasMany(Departments::class, 'id_faculty', 'id_faculty');
     }
