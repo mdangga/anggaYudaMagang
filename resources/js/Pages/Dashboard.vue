@@ -349,7 +349,10 @@ watch(selectedLocation, (newLocation) => {
                     Dashboard Admin
                 </h2>
                 <div class="text-sm text-gray-500 dark:text-gray-400 flex items-center">
-                    <i class="fas fa-calendar-alt mr-2"></i>
+                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                        <path fill="currentColor"
+                            d="M19 4h-2V3a1 1 0 0 0-2 0v1H9V3a1 1 0 0 0-2 0v1H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3V7a3 3 0 0 0-3-3m1 15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-7h16Zm0-9H4V7a1 1 0 0 1 1-1h2v1a1 1 0 0 0 2 0V6h6v1a1 1 0 0 0 2 0V6h2a1 1 0 0 1 1 1Z" />
+                    </svg>
                     {{ currentDate }}
                 </div>
             </div>
@@ -361,7 +364,15 @@ watch(selectedLocation, (newLocation) => {
                 class="lg:col-span-2 bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg overflow-hidden mb-6">
                 <div class="p-4 border-b border-gray-200 dark:border-slate-700">
                     <h3 class="text-base font-semibold text-gray-700 dark:text-gray-50 flex items-center">
-                        <i class="fas fa-map mr-2"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary-600"
+                            viewBox="0 0 48 48">
+                            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                d="M35.555 6.566H38.5c2.216 0 4 1.784 4 4v29c0 2.216-1.784 4-4 4h-29c-2.216 0-4-1.784-4-4v-29c0-2.216 1.784-4 4-4h14.02"
+                                stroke-width="4" />
+                            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                d="M29.538 4.434a9.554 9.554 0 0 0-9.554 9.554c0 7.477 7.314 16.49 9.207 18.699a.577.577 0 0 0 .882-.004c1.861-2.216 9.02-11.222 9.02-18.694a9.554 9.554 0 0 0-9.554-9.555zm0 13.124a3.57 3.57 0 1 1 3.571-3.57h0a3.57 3.57 0 0 1-3.57 3.57m5.251 8.567l7.71-1.189m-37 5.703l19.82-3.055m-7.412 1.142l-3.74-22.16"
+                                stroke-width="4" />
+                        </svg>
                         Peta Lokasi Magang
                     </h3>
                 </div>
@@ -380,7 +391,12 @@ watch(selectedLocation, (newLocation) => {
                 <div
                     class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm p-5">
                     <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-50 mb-4 flex items-center">
-                        <i class="fas fa-chart-bar mr-2 text-blue-600 dark:text-blue-400"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"
+                            viewBox="0 0 16 16">
+                            <path fill="currentColor" d="M1.75 13.25V1.5H.5v12a1.24 1.24 0 0 0 1.22 1H15.5v-1.25z" />
+                            <path fill="currentColor"
+                                d="M3.15 8H4.4v3.9H3.15zm3.26-4h1.26v7.9H6.41zm3.27 2h1.25v5.9H9.68zm3.27-3.5h1.25v9.4h-1.25z" />
+                        </svg>
                         Statistik Lokasi per Kategori
                     </h3>
 

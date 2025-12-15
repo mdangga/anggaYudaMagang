@@ -117,7 +117,7 @@ class LocationController extends Controller
     {
         $categories = Categories::select('id_category', 'name_category')->get();
         $faculties = Faculties::with(
-            'department:id_department,name_department,id_faculty'
+            'departments:id_department,name_department,id_faculty'
         )->get();
 
         return Inertia::render('Locations/Add', [

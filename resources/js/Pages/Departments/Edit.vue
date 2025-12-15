@@ -46,7 +46,7 @@ const toggleDarkMode = () => {
 onMounted(() => {
     const savedTheme = localStorage.getItem('theme')
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)')
-    
+
     if (savedTheme) {
         darkMode.value = savedTheme === 'dark'
     } else {
@@ -118,10 +118,17 @@ const submit = () => {
             <!-- FORM -->
             <form @submit.prevent="submit" class="space-y-6">
 
-                <!-- Mahasiswa Information -->
+                <!-- Department Information -->
                 <div class="card">
                     <div class="card-header">
-                        <i class="fas fa-user-graduate text-primary mr-2"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary mr-2" viewBox="0 0 32 32">
+                            <g fill="currentColor">
+                                <path
+                                    d="M28.99 30V16.98c0-.54-.44-.99-.99-.99h-8V12h2v1.19c0 .45.36.81.8.81h3.39c.45 0 .81-.36.81-.8V4.81c0-.45-.36-.81-.8-.81h-3.39c-.45 0-.81.36-.81.81V6h-2V2.92c0-.51-.41-.92-.92-.92H3.92c-.51 0-.92.41-.92.92v27.06h1.98v-4.95c0-.57.46-1.03 1.03-1.03h10.96c.57 0 1.03.46 1.03 1.03V30h-.99v-4.65c0-.19-.15-.35-.35-.35h-2.28c-.19 0-.35.15-.35.35V30H11zM20 27.01V24h1.5c.28 0 .5.23.5.5v2c0 .28-.22.5-.5.51zm0-5V19h1.5c.28 0 .5.23.5.5v2c0 .28-.22.5-.5.51zM22 11h-2V7h2zm5 8.5v2c0 .28-.22.5-.5.51h-2.02c-.28 0-.5-.23-.5-.5V19.5c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5m0 5v2c0 .28-.22.5-.5.51h-2.02c-.28 0-.5-.23-.5-.5V24.5c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5m-13.99-20v2c0 .28-.22.5-.5.5h-2.02c-.28 0-.5-.23-.5-.5v-2c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5m0 7c0 .28-.22.5-.5.5h-2.02c-.28 0-.5-.23-.5-.5v-2c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5zm0 3v2c0 .28-.22.5-.5.51h-2.02c-.28 0-.5-.23-.5-.5V14.5c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5m0 5v2c0 .28-.22.5-.5.51h-2.02c-.28 0-.5-.23-.5-.5V19.5c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5m5.01 2c0 .28-.23.5-.5.51H15.5c-.28 0-.5-.23-.5-.5V19.5c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5zm0-7v2c0 .28-.23.5-.5.51H15.5c-.28 0-.5-.23-.5-.5V14.5c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5m0-3c0 .28-.23.5-.5.5H15.5c-.28 0-.5-.23-.5-.5v-2c0-.28.22-.5.5-.5h2.02c.28 0 .5.23.5.5zm0-7v2c0 .28-.23.5-.5.5H15.5c-.28 0-.5-.22-.5-.5v-2c0-.28.22-.5.5-.5h2.02c.28 0 .5.23.5.5m-10.01 17c0 .28-.22.5-.5.51H5.49c-.28 0-.5-.23-.5-.5V19.5c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5zm0-7v2c0 .28-.22.5-.5.51H5.49c-.28 0-.5-.23-.5-.5V14.5c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5m0-3c0 .28-.22.5-.5.5H5.49c-.28 0-.5-.23-.5-.5v-2c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5zm0-7v2c0 .28-.22.5-.5.5H5.49c-.28 0-.5-.23-.5-.5v-2c0-.28.23-.5.5-.5h2.02c.28 0 .5.23.5.5" />
+                                <path
+                                    d="M13 30h-2.98v-4.65c0-.2.16-.35.35-.35h2.28c.19 0 .35.15.35.35zm-4.02-4.65V30H6v-4.65c0-.2.15-.35.35-.35h2.28c.2 0 .35.16.35.35" />
+                            </g>
+                        </svg>
                         Informasi Jurusan
                     </div>
 
@@ -144,7 +151,7 @@ const submit = () => {
                         </div>
                         <div>
                             <InputLabel for="id_faculty" value="Fakultas *" />
-    
+
                             <select id="id_faculty" class="form-select mt-1" v-model="form.id_faculty" required>
                                 <option value="">Pilih Fakultas</option>
                                 <option v-for="faculty in faculties" :key="faculty.id_faculty"
@@ -152,7 +159,7 @@ const submit = () => {
                                     {{ faculty.name_faculty }}
                                 </option>
                             </select>
-    
+
                             <InputError class="mt-2" :message="form.errors.id_faculty" />
                         </div>
                     </div>
@@ -170,14 +177,21 @@ const submit = () => {
                             <Transition enter-active-class="transition-opacity duration-300"
                                 leave-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
                                 leave-to-class="opacity-0">
-                                <p v-if="form.recentlySuccessful" class="text-sm text-success font-medium">
-                                    <i class="fas fa-check-circle mr-1"></i>
+                                <p v-if="form.recentlySuccessful" class="flex text-sm text-success font-medium">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" viewBox="0 0 24 24">
+                                        <path fill="currentColor" fill-rule="evenodd"
+                                            d="M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18m-.232-5.36l5-6l-1.536-1.28l-4.3 5.159l-2.225-2.226l-1.414 1.414l3 3l.774.774z"
+                                            clip-rule="evenodd" />
+                                    </svg>
                                     Permintaan berhasil dikirim!
                                 </p>
                             </Transition>
 
                             <PrimaryButton :disabled="form.processing" class="btn-primary">
-                                <i class="fas fa-paper-plane mr-2"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                                    <path fill="currentColor"
+                                        d="M20.04 2.323c1.016-.355 1.992.621 1.637 1.637l-5.925 16.93c-.385 1.098-1.915 1.16-2.387.097l-2.859-6.432l4.024-4.025a.75.75 0 0 0-1.06-1.06l-4.025 4.024l-6.432-2.859c-1.063-.473-1-2.002.097-2.387z" />
+                                </svg>
                                 {{ form.processing ? 'Mengirim...' : 'Kirim Permintaan' }}
                             </PrimaryButton>
                         </div>

@@ -76,7 +76,7 @@ const filteredDepartments = computed(() => {
         f => f.id_faculty === selectedFaculty.value
     )
 
-    return faculty?.department || []
+    return faculty?.departments || []
 })
 
 watch(darkMode, applyDarkMode)
@@ -122,7 +122,11 @@ const submit = () => {
                 <div class="flex items-center gap-3 mb-4">
                     <div
                         class="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
-                        <i class="fas fa-map-marker-alt text-white text-lg"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-white text-lg" viewBox="0 0 24 24">
+                            <path fill="currentColor" fill-rule="evenodd"
+                                d="M11.291 21.706L12 21zM12 21l.708.706a1 1 0 0 1-1.417 0l-.006-.007l-.017-.017l-.062-.063a48 48 0 0 1-1.04-1.106a50 50 0 0 1-2.456-2.908c-.892-1.15-1.804-2.45-2.497-3.734C4.535 12.612 4 11.248 4 10c0-4.539 3.592-8 8-8s8 3.461 8 8c0 1.248-.535 2.612-1.213 3.87c-.693 1.286-1.604 2.585-2.497 3.735a50 50 0 0 1-3.496 4.014l-.062.063l-.017.017l-.006.006zm0-8a3 3 0 1 0 0-6a3 3 0 0 0 0 6"
+                                clip-rule="evenodd" />
+                        </svg>
                     </div>
 
                     <div>
@@ -140,7 +144,10 @@ const submit = () => {
                 <!-- Mahasiswa Information -->
                 <div class="card">
                     <div class="card-header">
-                        <i class="fas fa-user-graduate text-primary mr-2"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary mr-2" viewBox="0 0 15 15">
+                            <path fill="currentColor"
+                                d="M7.5 1L0 4.5l2 .9v1.7c-.6.2-1 .8-1 1.4s.4 1.2 1 1.4v.1l-.9 2.1C.8 13 1 14 2.5 14s1.7-1 1.4-1.9L3 10c.6-.3 1-.8 1-1.5s-.4-1.2-1-1.4V5.9L7.5 8L15 4.5zm4.4 6.5l-4.5 2L5 8.4v.1c0 .7-.3 1.3-.8 1.8l.6 1.4v.1c.1.4.2.8.1 1.2c.7.3 1.5.5 2.5.5c3.3 0 4.5-2 4.5-3z" />
+                        </svg>
                         Informasi Mahasiswa
                     </div>
 
@@ -216,14 +223,21 @@ const submit = () => {
                             <Transition enter-active-class="transition-opacity duration-300"
                                 leave-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
                                 leave-to-class="opacity-0">
-                                <p v-if="form.recentlySuccessful" class="text-sm text-success font-medium">
-                                    <i class="fas fa-check-circle mr-1"></i>
+                                <p v-if="form.recentlySuccessful" class="flex text-sm text-success font-medium">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" viewBox="0 0 24 24">
+                                        <path fill="currentColor" fill-rule="evenodd"
+                                            d="M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18m-.232-5.36l5-6l-1.536-1.28l-4.3 5.159l-2.225-2.226l-1.414 1.414l3 3l.774.774z"
+                                            clip-rule="evenodd" />
+                                    </svg>
                                     Permintaan berhasil dikirim!
                                 </p>
                             </Transition>
 
                             <PrimaryButton :disabled="form.processing" class="btn-primary">
-                                <i class="fas fa-paper-plane mr-2"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                                    <path fill="currentColor"
+                                        d="M20.04 2.323c1.016-.355 1.992.621 1.637 1.637l-5.925 16.93c-.385 1.098-1.915 1.16-2.387.097l-2.859-6.432l4.024-4.025a.75.75 0 0 0-1.06-1.06l-4.025 4.024l-6.432-2.859c-1.063-.473-1-2.002.097-2.387z" />
+                                </svg>
                                 {{ form.processing ? 'Mengirim...' : 'Kirim Permintaan' }}
                             </PrimaryButton>
                         </div>

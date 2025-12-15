@@ -72,7 +72,19 @@ const togglePasswordVisibility = () => {
                     <!-- Eye Button -->
                     <button type="button" @click="togglePasswordVisibility"
                         class="absolute inset-y-0 right-3 flex items-center text-gray-400 hover:text-gray-600">
-                        <i :class="showPassword ? 'fa-regular fa-eye' : 'fa-regular fa-eye-slash'"></i>
+                        <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-fade-in"
+                            viewBox="0 0 24 24">
+                            <g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="2">
+                                <path d="M3 13c3.6-8 14.4-8 18 0" />
+                                <path d="M12 17a3 3 0 1 1 0-6a3 3 0 0 1 0 6" />
+                            </g>
+                        </svg>
+                        <svg v-else xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 animate-fade-in" viewBox="0 0 24 24">
+                            <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                                stroke-width="2"
+                                d="m19.5 16l-2.475-3.396M12 17.5V14m-7.5 2l2.469-3.388M3 8c3.6 8 14.4 8 18 0" />
+                        </svg>
                     </button>
                 </div>
 
@@ -106,4 +118,3 @@ const togglePasswordVisibility = () => {
         </form>
     </GuestLayout>
 </template>
-

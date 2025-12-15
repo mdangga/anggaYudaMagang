@@ -77,8 +77,7 @@ const submit = () => {
             <!-- Header -->
             <div class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
-                    <div
-                        class="w-10 h-10 rounded-lg bg-primary dark:bg-primary-dark flex items-center justify-center">
+                    <div class="w-10 h-10 rounded-lg bg-primary dark:bg-primary-dark flex items-center justify-center">
                         <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                             <path fill="currentColor" class="w-7 h-7 text-white dark:text-neutral-900"
                                 d="M2 2h9v9H2zm15.5 0C20 2 22 4 22 6.5S20 11 17.5 11S13 9 13 6.5S15 2 17.5 2m-11 12l4.5 8H2zM19 17h3v2h-3v3h-2v-3h-3v-2h3v-3h2z" />
@@ -97,10 +96,13 @@ const submit = () => {
             <!-- FORM -->
             <form @submit.prevent="submit" class="space-y-6">
 
-                <!-- Faculty Information -->
+                <!-- Category Information -->
                 <div class="card">
                     <div class="card-header">
-                        <i class="fas fa-user-graduate text-primary mr-2"></i>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-primary mr-2" viewBox="0 0 24 24">
+                            <path fill="currentColor"
+                                d="M2 2h9v9H2zm15.5 0C20 2 22 4 22 6.5S20 11 17.5 11S13 9 13 6.5S15 2 17.5 2m-11 12l4.5 8H2zM19 17h3v2h-3v3h-2v-3h-3v-2h3v-3h2z" />
+                        </svg>
                         Informasi Kategori
                     </div>
 
@@ -126,14 +128,21 @@ const submit = () => {
                             <Transition enter-active-class="transition-opacity duration-300"
                                 leave-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
                                 leave-to-class="opacity-0">
-                                <p v-if="form.recentlySuccessful" class="text-sm text-success font-medium">
-                                    <i class="fas fa-check-circle mr-1"></i>
+                                <p v-if="form.recentlySuccessful" class="flex text-sm text-success font-medium">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-1" viewBox="0 0 24 24">
+                                        <path fill="currentColor" fill-rule="evenodd"
+                                            d="M12 21a9 9 0 1 0 0-18a9 9 0 0 0 0 18m-.232-5.36l5-6l-1.536-1.28l-4.3 5.159l-2.225-2.226l-1.414 1.414l3 3l.774.774z"
+                                            clip-rule="evenodd" />
+                                    </svg>
                                     Permintaan berhasil dikirim!
                                 </p>
                             </Transition>
 
                             <PrimaryButton :disabled="form.processing" class="btn-primary">
-                                <i class="fas fa-paper-plane mr-2"></i>
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24">
+                                    <path fill="currentColor"
+                                        d="M20.04 2.323c1.016-.355 1.992.621 1.637 1.637l-5.925 16.93c-.385 1.098-1.915 1.16-2.387.097l-2.859-6.432l4.024-4.025a.75.75 0 0 0-1.06-1.06l-4.025 4.024l-6.432-2.859c-1.063-.473-1-2.002.097-2.387z" />
+                                </svg>
                                 {{ form.processing ? 'Mengirim...' : 'Kirim Permintaan' }}
                             </PrimaryButton>
                         </div>
