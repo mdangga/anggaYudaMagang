@@ -1,9 +1,10 @@
 <script setup>
+import axios from 'axios'
+import QRCode from 'qrcode'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ModalDelete from '@/Components/ModalDelete.vue'
 import { Head, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
-import axios from 'axios'
 
 const props = defineProps({
     locations: Object
@@ -24,24 +25,30 @@ const itemName = ref('')
 
 // Function untuk generate QR Code
 const generateQrCode = async () => {
+    loading.value = true
+    error.value = null
+
     try {
-        loading.value = true
-        error.value = null
+        const response = await axios.post('/locations/generate-link')
 
-        const response = await axios.post(`/locations/generate-link`)
-
-        if (response.data.link) {
-            // Gunakan API QR code sebenarnya jika tersedia
-            const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(response.data.link)}`
-
-            qrData.value = {
-                link: response.data.link,
-                qrCode: qrCodeUrl,
-                timestamp: new Date().toLocaleString(),
-                locationId: response.data.location_id || 'unknown' // Tambahkan locationId
-            }
-            showQrModal.value = true
+        const link = response?.data?.link
+        if (!link) {
+            throw new Error('Signed link tidak tersedia')
         }
+
+        const qrCodeDataUrl = await QRCode.toDataURL(link, {
+            width: 200,
+            margin: 4,
+            errorCorrectionLevel: 'M'
+        })
+
+        qrData.value = {
+            link,
+            qrCode: qrCodeDataUrl,
+            timestamp: new Date().toLocaleString()
+        }
+
+        showQrModal.value = true
     } catch (err) {
         console.error('Error generating QR:', err)
         error.value = 'Gagal generate QR Code. Silakan coba lagi.'
@@ -50,6 +57,7 @@ const generateQrCode = async () => {
         loading.value = false
     }
 }
+
 
 // Fungsi untuk download QR Code
 const downloadQRCode = () => {
@@ -374,8 +382,8 @@ const deleteItem = () => {
                 <div class="p-6">
                     <div v-if="qrData" class="space-y-4">
                         <div class="flex justify-center">
-                            <div class="bg-white border-2 border-gray-200 dark:border-neutral-700 p-4 rounded-lg">
-                                <img :src="qrData.qrCode" alt="QR Code" class="w-64 h-64" @error="qrData.qrCode = null">
+                            <div>
+                                <img :src="qrData.qrCode" alt="QR Code" class="w-64 h-64 border-2 border-gray-200 dark:border-neutral-700 rounded-lg" @error="qrData.qrCode = null">
 
                                 <div v-if="!qrData.qrCode"
                                     class="w-64 h-64 flex items-center justify-center bg-gray-100 dark:bg-neutral-700">
