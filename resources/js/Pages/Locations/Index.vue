@@ -140,6 +140,21 @@ const deleteMessage = computed(() => {
     return `Apakah Anda yakin ingin menghapus lokasi "${itemName.value}"? Tindakan ini tidak dapat dibatalkan.`
 })
 
+const approveRequest = () => {
+    router.post(route('locations.approve', selectedLocation.value.id_location), {}, {
+        preserveScroll: true,
+        onSuccess: () => {
+            alert(`Lokasi magang untuk telah disetujui.`)
+            showDetailModal.value = false
+            selectedLocation.value = null
+        },
+        onError: (errors) => {
+            console.error('Approval error:', errors)
+            alert('Gagal menyetujui lokasi magang. Silakan coba lagi.')
+        }
+    })
+}
+
 // DIUBAH: Ganti fungsi delete untuk lokasi
 const deleteItem = () => {
     deleting.value = true
@@ -383,7 +398,9 @@ const deleteItem = () => {
                     <div v-if="qrData" class="space-y-4">
                         <div class="flex justify-center">
                             <div>
-                                <img :src="qrData.qrCode" alt="QR Code" class="w-64 h-64 border-2 border-gray-200 dark:border-neutral-700 rounded-lg" @error="qrData.qrCode = null">
+                                <img :src="qrData.qrCode" alt="QR Code"
+                                    class="w-64 h-64 border-2 border-gray-200 dark:border-neutral-700 rounded-lg"
+                                    @error="qrData.qrCode = null">
 
                                 <div v-if="!qrData.qrCode"
                                     class="w-64 h-64 flex items-center justify-center bg-gray-100 dark:bg-neutral-700">
