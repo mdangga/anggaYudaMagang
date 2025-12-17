@@ -82,10 +82,10 @@ const deleteItem = () => {
         <template #header>
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                    <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-50">
                         Daftar Jurusan
                     </h2>
-                    <p class="text-neutral-500 dark:text-neutral-300 text-sm mt-1">
+                    <p class="text-neutral-500 dark:text-neutral-300 text-xs mt-1">
                         Kelola jurusan
                     </p>
                 </div>

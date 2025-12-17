@@ -3,7 +3,7 @@ import axios from 'axios'
 import QRCode from 'qrcode'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ModalDelete from '@/Components/ModalDelete.vue'
-import { Head, router } from '@inertiajs/vue3'
+import { Head, router, Link } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 
 const props = defineProps({
@@ -186,10 +186,10 @@ const deleteItem = () => {
         <template #header>
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h2 class="text-2xl font-bold text-neutral-900 dark:text-neutral-50">
+                    <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-50">
                         Daftar Lokasi Magang
                     </h2>
-                    <p class="text-neutral-500 dark:text-neutral-300 text-sm mt-1">
+                    <p class="text-neutral-500 dark:text-neutral-300 text-xs mt-1">
                         Kelola lokasi magang
                     </p>
                 </div>
@@ -306,7 +306,7 @@ const deleteItem = () => {
                                         </td>
                                         <td class="td text-center gap-2 flex justify-center">
                                             <button @click="openDetailModal(item)"
-                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-danger-300 to-danger-600 hover:from-danger-600 hover:to-danger-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
+                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-primary-300 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
 
                                                 <!-- Shimmer Effect -->
                                                 <div
@@ -327,7 +327,7 @@ const deleteItem = () => {
                                                 </span>
                                             </button>
                                             <button @click="openDeleteModal(item.id_location, item.name_location)"
-                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-danger-300 to-danger-600 hover:from-danger-600 hover:to-danger-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
+                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-danger-400 to-danger-600 hover:from-danger-600 hover:to-danger-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
 
                                                 <!-- Shimmer Effect -->
                                                 <div
@@ -512,12 +512,21 @@ const deleteItem = () => {
                         <div v-if="selectedLocation.images && selectedLocation.images.length"
                             class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
                             <div v-for="image in selectedLocation.images" :key="image.id_image"
-                                class="relative group aspect-w-4 aspect-h-3 overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-                                <img :src="`/storage/${image.image_path}`" :alt="image.alt_text || 'Dokumentasi lokasi'"
-                                    class="w-full h-full object-cover border border-gray-300 dark:border-neutral-600 cursor-pointer
-                                   transition-transform duration-300 group-hover:scale-110" loading="lazy" />
+                                class="relative group aspect-[4/3] overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
+                                <a :href="`/storage/${image.image_path}`" target="_blank" rel="noopener noreferrer">
+                                    <img :src="`/storage/${image.image_path}`"
+                                        :alt="image.alt_text || 'Dokumentasi lokasi'"
+                                        class="w-full h-full object-cover border border-gray-300 dark:border-neutral-600 cursor-pointer transition-transform duration-300 group-hover:scale-110"
+                                        loading="lazy" />
+
+                                    <p
+                                        class="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs text-center py-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                        {{ image.alt_text || 'Dokumentasi lokasi' }}
+                                    </p>
+                                </a>
                             </div>
                         </div>
+
 
                         <div v-else
                             class="py-4 text-center text-neutral-500 dark:text-neutral-400 border border-dashed border-gray-300 dark:border-neutral-600 rounded-lg">
