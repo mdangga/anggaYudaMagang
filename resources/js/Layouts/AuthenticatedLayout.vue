@@ -79,16 +79,16 @@ onMounted(() => {
                                     Dashboard
                                 </NavLink>
                                 <NavLink :href="route('locations.index')" :active="route().current('locations.index')">
-                                    Locations
+                                    Lokasi
                                 </NavLink>
                                 <NavLink :href="route('category.index')" :active="route().current('category.index')">
-                                    Categories
+                                    Kategori
                                 </NavLink>
                                 <NavLink :href="route('faculty.index')" :active="route().current('faculty.index')">
-                                    Faculties
+                                    Fakultas
                                 </NavLink>
                                 <NavLink :href="route('department.index')" :active="route().current('department.index')">
-                                    Departments
+                                    Jurusan
                                 </NavLink>
                             </div>
                         </div>
@@ -164,16 +164,16 @@ onMounted(() => {
                             Dashboard
                         </ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('locations.index')" :active="route().current('locations.index')">
-                            Locations
+                            Lokasi
                         </ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('category.index')" :active="route().current('category.index')">
-                            Categories
+                            Kategori
                         </ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('faculty.index')" :active="route().current('faculty.index')">
-                            Faculties
+                            Fakultas
                         </ResponsiveNavLink>
                         <ResponsiveNavLink :href="route('department.index')" :active="route().current('department.index')">
-                            Departments
+                            Jurusan
                         </ResponsiveNavLink>
                     </div>
 
