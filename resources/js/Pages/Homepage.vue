@@ -141,11 +141,10 @@ const formatDate = (dateString) => {
   const date = new Date(dateString)
   return date.toLocaleDateString('id-ID', {
     day: 'numeric',
-    month: 'long',
+    month: 'short',
     year: 'numeric'
   })
 }
-
 const navigateToLocation = (location) => {
   window.open(`https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}`, '_blank')
 }
@@ -153,6 +152,16 @@ const navigateToLocation = (location) => {
 const openInMaps = (lat, lng) => {
   window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank')
 }
+
+const openWhatsApp = (phone, locationName) => {
+  const message = encodeURIComponent(
+    `Halo, saya ingin bertanya tentang lokasi magang ${locationName}.`
+  )
+
+  const url = `https://wa.me/${phone}?text=${message}`
+  window.open(url, '_blank')
+}
+
 
 const handleResize = () => {
   checkMobile()
@@ -259,7 +268,7 @@ watch(selectedLocation, (newLocation) => {
 
     <!-- Overlay untuk mobile saat sidebar terbuka -->
     <div v-if="isMobile && sidebarOpen" @click="toggleSidebar"
-      class="fixed inset-0 bg-black/50 z-40 md:hidden transition-opacity duration-300"
+      class="fixed inset-0 z-40 transition-opacity duration-300 bg-black/50 md:hidden"
       :class="sidebarOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'"></div>
 
     <!-- Sidebar -->
@@ -282,14 +291,14 @@ watch(selectedLocation, (newLocation) => {
     ]">
 
       <!-- Header/Brand -->
-      <div class="brand-section p-4 md:p-5 border-b border-neutral-100 dark:border-neutral-700">
+      <div class="p-4 border-b brand-section md:p-5 border-neutral-100 dark:border-neutral-700">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-3">
-            <div class="logo-icon w-8 h-8 md:w-9 md:h-9 rounded-lg flex items-center justify-center">
+            <div class="flex items-center justify-center w-8 h-8 rounded-lg logo-icon md:w-9 md:h-9">
               <img src="storage/ordinary/logo.png" alt="Logo">
             </div>
             <div>
-              <h1 class="text-base md:text-lg font-bold text-neutral-900 dark:text-white">
+              <h1 class="text-base font-bold md:text-lg text-neutral-900 dark:text-white">
                 Peta Magang
               </h1>
               <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -298,28 +307,33 @@ watch(selectedLocation, (newLocation) => {
             </div>
           </div>
           <!-- Tombol tutup sidebar di mobile -->
-          <button v-if="isMobile" @click="toggleSidebar"
-            class="md:hidden p-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-700">
-            <i class="fas fa-times text-neutral-700 dark:text-neutral-300"></i>
+          <button v-if="isMobile" @click="clearSelection"
+            class="p-2 rounded-lg md:hidden hover:bg-neutral-100 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+              class="w-5 h-5 text-neutral-500 dark:text-neutral-300" fill="currentColor">
+              <path
+                d="M183.1 137.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L275.2 320L137.9 457.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l137.3-137.4l137.4 137.3c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L365.8 320l137.3-137.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320.5 274.7z" />
+            </svg>
           </button>
         </div>
       </div>
 
       <!-- Detail Panel -->
-      <div class="detail-panel flex-1 p-3 md:p-4 flex flex-col">
+      <div class="flex flex-col flex-1 detail-panel" :class="{ 'p-4': isMobile }">
 
         <!-- Empty State -->
         <div v-if="!selectedLocation"
-          class="empty-card bg-white dark:bg-neutral-800 rounded-xl p-4 border border-neutral-100 dark:border-neutral-700 shadow-sm">
+          class="p-4 bg-white border shadow-sm empty-card dark:bg-neutral-800 rounded-xl border-neutral-100 dark:border-neutral-700 md:m-4"
+          :class="{ 'm-4': isMobile }">
           <div class="flex items-center gap-3">
             <div>
               <div class="flex items-center justify-between">
-                <h3 class="font-bold text-neutral-900 dark:text-white text-sm md:text-base">Peta Magang</h3>
+                <h3 class="text-sm font-bold text-neutral-900 dark:text-white md:text-base">Peta Magang</h3>
                 <p class="text-xs text-neutral-500 dark:text-neutral-400">
                   {{ filteredLocations.length }} lokasi
                 </p>
               </div>
-              <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-1">
+              <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                 Klik marker atau pilih hasil pencarian untuk melihat detail lokasi.
               </p>
             </div>
@@ -327,114 +341,175 @@ watch(selectedLocation, (newLocation) => {
         </div>
 
         <!-- Detail Card -->
-        <div v-else
-          class="detail-card bg-white dark:bg-neutral-800 rounded-xl overflow-hidden shadow-lg border border-neutral-100 dark:border-neutral-700">
+        <div v-else class="bg-white detail-card dark:bg-neutral-800"
+          :class="{ ' rounded-xl shadow-md border border-neutral-100 dark:border-neutral-700': isMobile }">
 
           <!-- Thumbnail -->
           <div class="relative">
             <div v-for="img in selectedLocation.images" :key="img.id_image">
-              <img :src="`/storage/${img.image_path}`" :alt="img.alt_text || 'Image'" width="100" />
+              <img :src="`/storage/${img.image_path}`" :alt="img.alt_text || 'Image'"
+                class="object-cover w-full h-[235px]" />
             </div>
-            
+
             <!-- Tombol tutup card -->
             <button @click="clearSelection"
-              class="absolute top-2 right-2 w-8 h-8 bg-white/90 dark:bg-neutral-800/90 rounded-full flex items-center justify-center shadow-sm hover:bg-white dark:hover:bg-neutral-700 transition-colors">
-              <i class="fas fa-times text-neutral-700 dark:text-neutral-300 text-sm"></i>
+              class="absolute flex items-center justify-center w-8 h-8 transition-colors rounded-full shadow-sm top-2 right-2 bg-white/90 dark:bg-neutral-800/90 hover:bg-white dark:hover:bg-neutral-700"
+              :class="{ 'hidden': isMobile }">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+                class="w-4 h-4 text-neutral-700 dark:text-neutral-300" fill="currentColor">
+                <path
+                  d="M183.1 137.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L275.2 320L137.9 457.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l137.3-137.4l137.4 137.3c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L365.8 320l137.3-137.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320.5 274.7z" />
+              </svg>
             </button>
           </div>
 
           <!-- Content -->
-          <div class="p-3 md:p-4">
-            <!-- Header dengan judul dan kategori -->
-            <div class="mb-3">
-              <h2 class="detail-title text-lg md:text-xl font-bold text-neutral-900 dark:text-white mb-1">
+          <div class="relative">
+            <!-- Header -->
+            <div class="px-3 pt-3 mb-3 md:px-4 md:pt-4">
+              <h2 class="mb-1 text-lg font-bold detail-title md:text-xl text-neutral-900 dark:text-white">
                 {{ selectedLocation.name_location }}
               </h2>
               <div class="flex items-center justify-between">
-                <p class="detail-subtitle text-xs md:text-sm text-neutral-500 dark:text-neutral-400">
+                <p class="text-xs detail-subtitle md:text-sm text-neutral-500 dark:text-neutral-400">
                   {{ selectedLocation.category.name_category }}
                 </p>
-                <span class="text-xs text-neutral-400 dark:text-neutral-500">
+                <!-- <span class="text-xs text-neutral-400 dark:text-neutral-500">
+                  {{ formatDate(selectedLocation.created_at) }}
+                </span> -->
+              </div>
+            </div>
+            <!-- separator -->
+            <div class="w-full h-px bg-neutral-100 dark:bg-neutral-600/35"></div>
+
+            <div class="px-3 pt-3 pb-3 md:px-4 md:pb-4">
+              <!-- Deskripsi -->
+              <p class="mb-4 text-xs leading-relaxed text-neutral-700 dark:text-neutral-300 md:text-sm line-clamp-3">
+                {{ selectedLocation.description }}
+              </p>
+              <p class="mb-4 text-xs text-neutral-700 dark:text-neutral-300 md:text-sm">
+                {{ selectedLocation.department?.name_department }}
+                <span class="mx-1">•</span>
+                {{ selectedLocation.department?.faculty?.name_faculty }}
+              </p>
+              <!-- Koordinat Chip -->
+              <div class="mb-4">
+                <div
+                  class="flex items-center justify-between px-3 py-2 text-xs rounded-lg chip bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300">
+                  <div class="flex items-center gap-2">
+                    <svg class="w-3 h-3 text-primary-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1536">
+                      <path fill="currentColor"
+                        d="M768 512q0-106-75-181t-181-75t-181 75t-75 181t75 181t181 75t181-75t75-181m256 0q0 109-33 179l-364 774q-16 33-47.5 52t-67.5 19t-67.5-19t-46.5-52L33 691Q0 621 0 512q0-212 150-362T512 0t362 150t150 362" />
+                    </svg>
+                    <span>Koordinat</span>
+                  </div>
+                  <span class="font-mono text-xs">
+                    {{ selectedLocation.latitude.toFixed(6) }}, {{ selectedLocation.longitude.toFixed(6) }}
+                  </span>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="grid grid-cols-3 gap-2 mb-4 action-buttons">
+                <button @click="openWhatsApp(selectedLocation.contact, selectedLocation.name_location)"
+                  :disabled="!selectedLocation.contact" class="btn-primary font-semibold py-2.5 px-3 rounded-lg transition-all duration-200
+              flex items-center justify-center gap-2 text-sm
+              bg-primary hover:bg-primary-dark text-neutral-700
+              disabled:bg-neutral-300 disabled:text-neutral-500
+              disabled:cursor-not-allowed disabled:hover:bg-neutral-300">
+
+                  <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <path fill="currentColor"
+                      d="M19.05 4.91A9.82 9.82 0 0 0 12.04 2c-5.46 0-9.91 4.45-9.91 9.91c0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21c5.46 0 9.91-4.45 9.91-9.91c0-2.65-1.03-5.14-2.9-7.01m-7.01 15.24c-1.48 0-2.93-.4-4.2-1.15l-.3-.18l-3.12.82l.83-3.04l-.2-.31a8.26 8.26 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24c2.2 0 4.27.86 5.82 2.42a8.18 8.18 0 0 1 2.41 5.83c.02 4.54-3.68 8.23-8.22 8.23m4.52-6.16c-.25-.12-1.47-.72-1.69-.81c-.23-.08-.39-.12-.56.12c-.17.25-.64.81-.78.97c-.14.17-.29.19-.54.06c-.25-.12-1.05-.39-1.99-1.23c-.74-.66-1.23-1.47-1.38-1.72c-.14-.25-.02-.38.11-.51c.11-.11.25-.29.37-.43s.17-.25.25-.41c.08-.17.04-.31-.02-.43s-.56-1.34-.76-1.84c-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31c-.22.25-.86.85-.86 2.07s.89 2.4 1.01 2.56c.12.17 1.75 2.67 4.23 3.74c.59.26 1.05.41 1.41.52c.59.19 1.13.16 1.56.1c.48-.07 1.47-.6 1.67-1.18c.21-.58.21-1.07.14-1.18s-.22-.16-.47-.28" />
+                  </svg>
+                  <span class="truncate">Chat</span>
+                </button>
+                <button @click="navigateToLocation(selectedLocation)"
+                  class="btn-secondary border border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 font-medium py-2.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm">
+                  <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+
+                    <g fill="none" stroke="currentColor" stroke-width="1">
+                      <path stroke-width="1.5"
+                        d="M18.719 10.715a1.044 1.044 0 0 1-1.437 0c-1.765-1.683-4.13-3.564-2.977-6.294C14.929 2.945 16.425 2 18 2s3.072.945 3.695 2.42c1.152 2.728-1.207 4.617-2.977 6.295Z" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 6h.009" />
+                      <circle cx="5" cy="19" r="3" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" />
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M11 7H9.5C7.567 7 6 8.343 6 10s1.567 3 3.5 3h3c1.933 0 3.5 1.343 3.5 3s-1.567 3-3.5 3H11" />
+                    </g>
+                  </svg>
+                  <span class="truncate">Rute</span>
+                </button>
+                <button @click="openInMaps(selectedLocation.latitude, selectedLocation.longitude)"
+                  class="btn-secondary border border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 font-medium py-2.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm">
+                  <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
+                    <path fill="currentColor"
+                      d="M18 6.72a5.73 5.73 0 1 0 5.73 5.73A5.73 5.73 0 0 0 18 6.72m0 9.46a3.73 3.73 0 1 1 3.73-3.73A3.73 3.73 0 0 1 18 16.17Z"
+                      class="clr-i-outline clr-i-outline-path-1" />
+                    <path fill="currentColor"
+                      d="M18 2A11.79 11.79 0 0 0 6.22 13.73c0 4.67 2.62 8.58 4.54 11.43l.35.52a100 100 0 0 0 6.14 8l.76.89l.76-.89a100 100 0 0 0 6.14-8l.35-.53c1.91-2.85 4.53-6.75 4.53-11.42A11.79 11.79 0 0 0 18 2m5.59 22l-.36.53c-1.72 2.58-4 5.47-5.23 6.9c-1.18-1.43-3.51-4.32-5.23-6.9l-.35-.53c-1.77-2.64-4.2-6.25-4.2-10.31a9.78 9.78 0 1 1 19.56 0c0 4.1-2.42 7.71-4.19 10.31"
+                      class="clr-i-outline clr-i-outline-path-2" />
+                    <path fill="none" d="M0 0h36v36H0z" />
+                  </svg>
+                  <span class="truncate">Maps</span>
+                </button>
+
+              </div>
+
+              <div class="flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400">
+                <span>
+                  Ditambahkan oleh <span class="font-medium truncate text-neutral-700 dark:text-neutral-300">
+                    {{ selectedLocation.student_name }}
+                  </span>
+                </span>
+                <span>
                   {{ formatDate(selectedLocation.created_at) }}
                 </span>
               </div>
-            </div>
 
-            <!-- Deskripsi -->
-            <p class="text-neutral-700 dark:text-neutral-300 text-xs md:text-sm leading-relaxed mb-4 line-clamp-3">
-              {{ selectedLocation.description }}
-            </p>
-
-            <!-- Koordinat Chip -->
-            <div class="mb-4">
-              <div
-                class="chip bg-neutral-100 dark:bg-neutral-700 text-neutral-700 dark:text-neutral-300 text-xs px-3 py-2 rounded-lg flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                  <i class="fas fa-map-marker-alt text-primary"></i>
-                  <span>Koordinat</span>
-                </div>
-                <span class="font-mono text-xs">
-                  {{ selectedLocation.latitude.toFixed(6) }}, {{ selectedLocation.longitude.toFixed(6) }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="action-buttons grid grid-cols-2 gap-2 mb-4">
-              <button @click="navigateToLocation(selectedLocation)"
-                class="btn-primary bg-primary hover:bg-primary-dark text-neutral-900 font-semibold py-2.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm">
-                <i class="fas fa-route"></i>
-                <span class="truncate">Petunjuk Arah</span>
-              </button>
-              <button @click="openInMaps(selectedLocation.latitude, selectedLocation.longitude)"
-                class="btn-secondary border border-neutral-200 dark:border-neutral-600 text-neutral-700 dark:text-neutral-300 hover:bg-neutral-50 dark:hover:bg-neutral-700 font-medium py-2.5 px-3 rounded-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm">
-                <i class="fas fa-location-dot"></i>
-                <span class="truncate">Buka di Maps</span>
-              </button>
-            </div>
-
-            <!-- Additional Info -->
-            <div class="additional-info border-t border-neutral-100 dark:border-neutral-700 pt-3 md:pt-4">
+              <!-- Additional Info -->
+              <!-- <div class="pt-3 border-t additional-info border-neutral-100 dark:border-neutral-700 md:pt-4">
               <h4
-                class="text-xs md:text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2 md:mb-3 flex items-center gap-2">
+                class="flex items-center gap-2 mb-2 text-xs font-semibold md:text-sm text-neutral-700 dark:text-neutral-300 md:mb-3">
                 <i class="fas fa-info-circle text-info"></i>
                 Detail Lokasi
               </h4>
               <div class="space-y-2 text-xs md:text-sm">
                 <div class="grid grid-cols-3 gap-2">
-                  <span class="text-neutral-600 dark:text-neutral-400 col-span-1">Kategori:</span>
-                  <span class="font-medium text-neutral-900 dark:text-white col-span-2 text-right">
+                  <span class="col-span-1 text-neutral-600 dark:text-neutral-400">Kategori:</span>
+                  <span class="col-span-2 font-medium text-right text-neutral-900 dark:text-white">
                     {{ selectedLocation.category_name }}
                   </span>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
-                  <span class="text-neutral-600 dark:text-neutral-400 col-span-1">Latitude:</span>
-                  <span class="font-medium text-neutral-900 dark:text-white col-span-2 text-right font-mono">
+                  <span class="col-span-1 text-neutral-600 dark:text-neutral-400">Latitude:</span>
+                  <span class="col-span-2 font-mono font-medium text-right text-neutral-900 dark:text-white">
                     {{ selectedLocation.latitude.toFixed(8) }}
                   </span>
                 </div>
                 <div class="grid grid-cols-3 gap-2">
-                  <span class="text-neutral-600 dark:text-neutral-400 col-span-1">Longitude:</span>
-                  <span class="font-medium text-neutral-900 dark:text-white col-span-2 text-right font-mono">
+                  <span class="col-span-1 text-neutral-600 dark:text-neutral-400">Longitude:</span>
+                  <span class="col-span-2 font-mono font-medium text-right text-neutral-900 dark:text-white">
                     {{ selectedLocation.longitude.toFixed(8) }}
                   </span>
                 </div>
               </div>
+            </div> -->
             </div>
           </div>
         </div>
+
       </div>
 
       <!-- Footer -->
-      <div id="sidebar-footer" class="sidebar-footer border-t border-neutral-100 dark:border-neutral-700 p-3">
+      <div id="sidebar-footer" class="p-3 border-t sidebar-footer border-neutral-100 dark:border-neutral-700">
         <div class="flex items-center justify-between">
           <!-- Tambah Lokasi Button -->
           <!-- <Link :href="route('request-locations.create')">
             <button
-              class="flex items-center gap-2 px-3 py-2 rounded-lg text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-primary hover:bg-opacity-20 dark:hover:bg-primary dark:hover:bg-opacity-20 transition-all duration-200 active:scale-95"
+              class="flex items-center gap-2 px-3 py-2 transition-all duration-200 rounded-lg text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-primary hover:bg-opacity-20 dark:hover:bg-primary dark:hover:bg-opacity-20 active:scale-95"
               title="Tambah Lokasi Baru">
-              <i class="fas fa-map-marker-alt text-sm"></i>
-              <span class="hidden md:inline text-sm font-medium">Tambah Lokasi</span>
+              <i class="text-sm fas fa-map-marker-alt"></i>
+              <span class="hidden text-sm font-medium md:inline">Tambah Lokasi</span>
             </button>
           </Link> -->
 
@@ -445,40 +520,50 @@ watch(selectedLocation, (newLocation) => {
     </aside>
 
     <!-- Main Content Area -->
-    <main class="flex-1 relative">
+    <main class="relative flex-1">
       <!-- Map Component -->
       <MapComponent ref="mapComponentRef" :locations="locations" :selected-location="selectedLocation"
         :dark-mode="darkMode" :sidebar-open="sidebarOpen" @location-selected="selectLocation"
         @map-initialized="onMapInitialized">
         <!-- Search Bar Overlay -->
         <div
-          class="flex sm:flex-row md:inline search-container absolute top-3 md:top-4 left-3 md:left-4 right-3 md:right-4 z-40 transition-all duration-200"
+          class="absolute z-40 flex transition-all duration-200 sm:flex-row md:inline search-container top-3 md:top-4 left-3 md:left-4 right-3 md:right-4"
           :class="sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'">
 
           <!-- Mobile Sidebar Toggle Button -->
           <button v-if="isMobile" @click.stop="toggleSidebar"
-            class="md:hidden w-10 h-10 absolute bg-primary hover:bg-primary-dark text-neutral-900 rounded-xl shadow-lg">
-            <i class="fas fa-bars text-lg w-4 h-4"></i>
+            class="absolute flex items-center justify-center w-10 h-10 shadow-lg md:hidden bg-primary hover:bg-primary-dark text-neutral-700 rounded-xl">
+            <svg class="w-6 h-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+              <path fill="currentColor"
+                d="M96 160c0-17.7 14.3-32 32-32h384c17.7 0 32 14.3 32 32s-14.3 32-32 32H128c-17.7 0-32-14.3-32-32m0 160c0-17.7 14.3-32 32-32h384c17.7 0 32 14.3 32 32s-14.3 32-32 32H128c-17.7 0-32-14.3-32-32m448 160c0 17.7-14.3 32-32 32H128c-17.7 0-32-14.3-32-32s14.3-32 32-32h384c17.7 0 32 14.3 32 32" />
+            </svg>
           </button>
 
-          <div class="search-box relative max-w-2xl max-h-10 mx-auto">
+          <div class="relative max-w-2xl mx-auto search-box max-h-10">
             <div class="relative">
-              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <i class="fas fa-search text-neutral-400 text-sm md:text-base"></i>
+              <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
+                <svg class="z-20 w-4 h-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640">
+                  <path fill="currentColor"
+                    d="M480 272c0 45.9-14.9 88.3-40 122.7l126.6 126.7c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L394.7 440c-34.4 25.1-76.8 40-122.7 40c-114.9 0-208-93.1-208-208S157.1 64 272 64s208 93.1 208 208M272 416c79.5 0 144-64.5 144-144s-64.5-144-144-144s-144 64.5-144 144s64.5 144 144 144" />
+                </svg>
               </div>
               <input v-model="searchQuery" @input="handleSearch" @focus="showAutocomplete = true"
                 @keydown.down="highlightNext" @keydown.up="highlightPrev" @keydown.enter="selectHighlighted"
                 @keydown.esc="showAutocomplete = false" type="text" placeholder="Cari lokasi magang..."
                 class="w-full pl-9 md:pl-10 pr-9 md:pr-10 py-2.5 md:py-3 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm rounded-xl border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent shadow-lg text-sm md:text-base" />
-              <button v-if="searchQuery" @click="clearSearch" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <i
-                  class="fas fa-times text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 text-sm md:text-base"></i>
+              <button v-if="searchQuery" @click="clearSearch" class="absolute inset-y-0 right-0 flex items-center pr-3">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+                  class="w-4 h-4 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300 md:text-base"
+                  fill="currentColor">
+                  <path
+                    d="M183.1 137.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L275.2 320L137.9 457.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l137.3-137.4l137.4 137.3c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L365.8 320l137.3-137.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320.5 274.7z" />
+                </svg>
               </button>
             </div>
 
             <!-- Autocomplete Dropdown -->
             <div v-if="showAutocomplete && filteredResults.length > 0"
-              class="autocomplete-dropdown mt-2 bg-white dark:bg-neutral-800 rounded-xl border border-neutral-200 dark:border-neutral-600 shadow-2xl overflow-hidden max-h-64 overflow-y-auto">
+              class="mt-2 overflow-hidden overflow-y-auto bg-white border shadow-2xl autocomplete-dropdown dark:bg-neutral-800 rounded-xl border-neutral-200 dark:border-neutral-600 max-h-64">
               <div v-for="(location, index) in filteredResults" :key="location.id_location"
                 @click="selectLocation(location)" @mouseenter="highlightedIndex = index" :class="[
                   'autocomplete-item p-2 md:p-3 cursor-pointer transition-colors flex items-center gap-2 md:gap-3 border-b border-neutral-100 dark:border-neutral-700 last:border-b-0',
@@ -486,13 +571,17 @@ watch(selectedLocation, (newLocation) => {
                     ? 'bg-primary/10 dark:bg-primary/20'
                     : 'hover:bg-neutral-50 dark:hover:bg-neutral-700'
                 ]">
-                <div class="flex-shrink-0 w-10 h-10 md:w-12 md:h-12 rounded-lg overflow-hidden">
-                  <img
-                    :src="location.image_path || 'https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=100&h=100&fit=crop'"
-                    :alt="location.name_location" class="w-full h-full object-cover" />
+                <div class="flex-shrink-0 w-10 h-10 overflow-hidden rounded-lg md:w-12 md:h-12">
+                  <img v-if="location.images && location.images.length"
+                    :src="`/storage/${location.images[0].image_path}`" :alt="location.name_location"
+                    class="object-cover w-full h-full" />
+
+                  <img v-else src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=100&h=100&fit=crop"
+                    alt="Default Image" class="object-cover w-full h-full" />
+
                 </div>
                 <div class="flex-1 min-w-0">
-                  <h4 class="font-semibold text-neutral-900 dark:text-white truncate text-sm md:text-base">
+                  <h4 class="text-sm font-semibold truncate text-neutral-900 dark:text-white md:text-base">
                     {{ location.name_location }}
                   </h4>
                   <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
@@ -505,20 +594,20 @@ watch(selectedLocation, (newLocation) => {
         </div>
 
         <!-- Location Indicator (mobile only) -->
-        <div v-if="isMobile && selectedLocation && !sidebarOpen" class="absolute w-80 bottom-8 left-4 right-4 z-30">
+        <div v-if="isMobile && selectedLocation && !sidebarOpen" class="absolute z-30 w-80 bottom-10 left-4 right-4">
           <div @click.stop="toggleSidebar"
-            class="bg-white dark:bg-neutral-800 rounded-xl p-3 shadow-lg border border-neutral-200 dark:border-neutral-600 cursor-pointer hover:bg-neutral-50 dark:hover:bg-neutral-700 transition-colors">
+            class="p-3 transition-colors bg-white border shadow-lg cursor-pointer dark:bg-neutral-800 rounded-xl border-neutral-200 dark:border-neutral-600 hover:bg-neutral-50 dark:hover:bg-neutral-700">
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <div
-                  class="w-8 h-8 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
-                  <i class="fas fa-map-marker-alt text-white text-xs"></i>
+                  class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-r from-primary to-primary-dark">
+                  <i class="text-xs text-white fas fa-map-marker-alt"></i>
                 </div>
                 <div class="min-w-0">
-                  <h3 class="font-semibold text-neutral-900 dark:text-white truncate text-sm">
+                  <h3 class="text-sm font-semibold truncate text-neutral-900 dark:text-white">
                     {{ selectedLocation.name_location }}
                   </h3>
-                  <p class="text-xs text-neutral-500 dark:text-neutral-400 truncate">
+                  <p class="text-xs truncate text-neutral-500 dark:text-neutral-400">
                     {{ selectedLocation.category_name }}
                   </p>
                 </div>

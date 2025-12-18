@@ -1,5 +1,5 @@
 <template>
-  <div class="map-container h-full relative">
+  <div class="relative h-full map-container">
     <div ref="mapContainer" id="map" class="absolute inset-0 z-0"></div>
     <slot></slot>
   </div>
@@ -39,14 +39,16 @@ const markers = ref({})
 const mapInitialized = ref(false)
 
 // Methods
-const createCustomIcon = (isSelected = false) => {
+const createCustomIcon = () => {
   return L.divIcon({
     html: `
-      <div class="relative transition-transform duration-200">
-        <div class="text-primary shadow-lg flex items-center justify-center transform transition-all duration-300 hover:scale-110">
-          <i class="fas fa-map-marker-alt text-primary text-3xl"></i>
-        </div>
-        ${isSelected ? '<div class="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping"></div>' : ''}
+      <div class="relative group">
+        <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 640 640"
+             class="transition duration-200 transform text-primary group-hover:text-primary-600 group-hover:scale-110 drop-shadow-xl dark:text-primary-600 dark:hover:text-primary-700">
+          <path stroke="white"
+          stroke-opacity="0.8"
+            stroke-width="24" fill="currentColor" d="M128 252.6C128 148.4 214 64 320 64s192 84.4 192 188.6c0 119.3-120.2 262.3-170.4 316.8c-11.8 12.8-31.5 12.8-43.3 0c-50.2-54.5-170.4-197.5-170.4-316.8zM320 320c35.3 0 64-28.7 64-64s-28.7-64-64-64s-64 28.7-64 64s28.7 64 64 64" />
+        </svg>
       </div>
     `,
     className: 'custom-marker',
@@ -80,8 +82,8 @@ const addMarkers = () => {
       })
       .bindPopup(`
         <div class="p-3 min-w-[180px]">
-          <h3 class="font-bold text-neutral-900 dark:text-white text-sm mb-1">${location.name_location}</h3>
-          <p class="text-xs text-neutral-600 dark:text-neutral-400 mb-2">${location.category.name_category}</p>
+          <h3 class="mb-1 text-sm font-bold text-neutral-900 dark:text-white">${location.name_location}</h3>
+          <p class="mb-2 text-xs text-neutral-600 dark:text-neutral-400">${location.category.name_category}</p>
         </div>
       `)
 
