@@ -8,32 +8,15 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 // Data state
 const locations = ref([])
 const categories = ref([])
-const searchQuery = ref('')
 const selectedLocation = ref(null)
-const filteredResults = ref([])
 const showAutocomplete = ref(false)
 const highlightedIndex = ref(-1)
 const sidebarOpen = ref(false)
 const isMobile = ref(false)
 
-// Inject dark mode dari layout
-const darkMode = inject('darkMode', ref(false))
-const toggleDarkMode = inject('toggleDarkMode', () => { })
-
 // Map reference
 const mapComponentRef = ref(null)
 const mapKey = ref(Date.now())
-
-// Computed
-const filteredLocations = computed(() => {
-    if (!searchQuery.value.trim()) return locations.value
-    const query = searchQuery.value.toLowerCase()
-    return locations.value.filter(location =>
-        location.name_location.toLowerCase().includes(query) ||
-        location.category_name.toLowerCase().includes(query) ||
-        location.description.toLowerCase().includes(query)
-    )
-})
 
 // Methods
 const checkMobile = () => {
@@ -44,94 +27,6 @@ const selectLocation = (location) => {
     selectedLocation.value = location
     showAutocomplete.value = false
     highlightedIndex.value = -1
-
-    // Open sidebar on mobile
-    if (isMobile.value) sidebarOpen.value = true
-
-    const footer = document.getElementById('sidebar-footer')
-    if (footer) footer.classList.add('hidden')
-}
-
-const clearSelection = () => {
-    selectedLocation.value = null
-    sidebarOpen.value = false
-
-    // Reset map view
-    if (mapComponentRef.value) {
-        mapComponentRef.value.clearSelectionOnMap()
-    }
-
-    document.getElementById('sidebar-footer')?.classList.remove('hidden')
-}
-
-const handleSearch = () => {
-    if (searchQuery.value.trim()) {
-        filteredResults.value = filteredLocations.value.slice(0, 5)
-        showAutocomplete.value = true
-        highlightedIndex.value = -1
-    } else {
-        filteredResults.value = []
-        showAutocomplete.value = false
-    }
-}
-
-const clearSearch = () => {
-    searchQuery.value = ''
-    filteredResults.value = []
-    showAutocomplete.value = false
-    highlightedIndex.value = -1
-}
-
-const highlightNext = (e) => {
-    e.preventDefault()
-    if (filteredResults.value.length > 0) {
-        highlightedIndex.value = (highlightedIndex.value + 1) % filteredResults.value.length
-    }
-}
-
-const highlightPrev = (e) => {
-    e.preventDefault()
-    if (filteredResults.value.length > 0) {
-        highlightedIndex.value = highlightedIndex.value <= 0
-            ? filteredResults.value.length - 1
-            : highlightedIndex.value - 1
-    }
-}
-
-const selectHighlighted = (e) => {
-    e.preventDefault()
-    if (highlightedIndex.value >= 0 && filteredResults.value[highlightedIndex.value]) {
-        selectLocation(filteredResults.value[highlightedIndex.value])
-    }
-}
-
-const toggleSidebar = () => {
-    sidebarOpen.value = !sidebarOpen.value
-
-    // Invalidate map size when sidebar toggles
-    setTimeout(() => {
-        if (mapComponentRef.value) {
-            mapComponentRef.value.invalidateSize()
-        }
-    }, 300)
-}
-
-const formatDate = (dateString) => {
-    if (!dateString) return '-'
-    const date = new Date(dateString)
-    return date.toLocaleDateString('id-ID', {
-        day: 'numeric',
-        month: 'long',
-        year: 'numeric'
-    })
-}
-
-const navigateToLocation = (location) => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${location.latitude},${location.longitude}`, '_blank')
-}
-
-const openInMaps = (lat, lng) => {
-    window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank')
 }
 
 const handleResize = () => {
@@ -268,26 +163,6 @@ onMounted(async () => {
     // Fetch locations
     await getLocation()
     await getCategories()
-
-    // Setup event listeners
-    document.addEventListener('click', (e) => {
-        if (!e.target.closest('.search-box')) {
-            showAutocomplete.value = false
-        }
-    })
-
-    // Close sidebar when clicking outside on mobile
-    document.addEventListener('click', (e) => {
-        if (isMobile.value && sidebarOpen.value &&
-            !e.target.closest('#sidebar') &&
-            !e.target.closest('.search-container') &&
-            !e.target.closest('.mobile-sidebar-toggle')) {
-            toggleSidebar()
-        }
-    })
-
-    // Handle window resize
-    window.addEventListener('resize', handleResize)
 })
 
 onUnmounted(() => {
@@ -321,21 +196,6 @@ async function getCategories() {
         return []
     }
 }
-
-// Watchers
-watch(sidebarOpen, (newValue) => {
-    if (mapComponentRef.value) {
-        setTimeout(() => {
-            mapComponentRef.value.invalidateSize()
-        }, 300)
-    }
-})
-
-watch(selectedLocation, (newLocation) => {
-    if (!newLocation && sidebarOpen.value && isMobile.value) {
-        sidebarOpen.value = false
-    }
-})
 </script>
 
 <template>
@@ -379,8 +239,8 @@ watch(selectedLocation, (newLocation) => {
                 <div class="p-4">
                     <div class="h-96 w-full rounded-md overflow-hidden">
                         <MapComponent :key="mapKey" ref="mapComponentRef" :locations="locations"
-                            :selected-location="selectedLocation" :sidebar-open="sidebarOpen"
-                            @location-selected="selectLocation" @map-initialized="onMapInitialized" />
+                            :selected-location="selectedLocation" @location-selected="selectLocation"
+                            @map-initialized="onMapInitialized" />
                     </div>
                 </div>
             </div>
@@ -407,34 +267,144 @@ watch(selectedLocation, (newLocation) => {
     </AuthenticatedLayout>
 </template>
 
-<style scoped>
-/* Styles yang dibutuhkan untuk map dark mode */
-:deep(.leaflet-pane),
-:deep(.leaflet-tile),
-:deep(.leaflet-marker-icon),
-:deep(.leaflet-marker-shadow),
-:deep(.leaflet-tile-container),
-:deep(.leaflet-pane > svg),
-:deep(.leaflet-pane > canvas) {
-    transition: filter 0.3s ease;
+<style>
+/* Import Leaflet CSS */
+@import 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+
+/* Fix map container */
+.map-container {
+    transition: margin-left 0.3s ease;
 }
 
-:deep(.leaflet-container) {
-    font-family: inherit;
+#map {
+    z-index: 1;
 }
 
-/* Style untuk custom marker */
-:deep(.custom-marker) {
-    background: none;
-    border: none;
-}
-
-/* Dark mode styles for map */
-:deep(.dark .leaflet-tile-pane) {
+/* Dark mode filter untuk leaflet tiles */
+.dark .leaflet-tile-pane {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) !important;
 }
 
-:deep(.dark .leaflet-layer) {
+/* Pastikan marker tidak terkena filter */
+.dark .leaflet-layer {
     filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%) !important;
+}
+
+/* Leaflet overrides */
+.leaflet-container {
+    font-family: 'Figtree', sans-serif !important;
+}
+
+/* Perbaikan untuk performa filter */
+.leaflet-tile-container {
+    will-change: transform;
+}
+
+/* Animasi smooth untuk perubahan theme */
+.leaflet-tile-pane {
+    transition: filter 0.3s ease !important;
+}
+
+.leaflet-control-zoom {
+    margin-top: 70px !important;
+    border: none !important;
+}
+
+.leaflet-control-zoom a {
+    width: 36px !important;
+    height: 36px !important;
+    line-height: 36px !important;
+    background-color: white !important;
+    color: #374151 !important;
+    border: 1px solid #e5e7eb !important;
+    font-size: 18px !important;
+}
+
+.dark .leaflet-control-zoom a {
+    background-color: #374151 !important;
+    color: #f3f4f6 !important;
+    border-color: #4b5563 !important;
+}
+
+.leaflet-control-attribution {
+    background-color: rgba(255, 255, 255, 0.9) !important;
+    font-size: 11px !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    margin-right: 10px !important;
+    margin-bottom: 10px !important;
+}
+
+.dark .leaflet-control-attribution {
+    background-color: rgba(31, 41, 55, 0.9) !important;
+    color: #d1d5db !important;
+}
+
+.dark .leaflet-control-attribution a {
+    color: #93c5fd !important;
+}
+
+.leaflet-popup-content {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.leaflet-popup-content-wrapper {
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+    border: 1px solid rgba(0, 0, 0, 0.1) !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+}
+
+.dark .leaflet-popup-content-wrapper {
+    background-color: #1f2937 !important;
+    border-color: #374151 !important;
+}
+
+.dark .leaflet-popup-tip {
+    background: #1f2937 !important;
+}
+
+/* Animations */
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+    }
+
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+    }
+
+    to {
+        transform: translateX(-100%);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .leaflet-control-zoom {
+        margin-top: 100px !important;
+    }
+
+    .leaflet-control-zoom a {
+        width: 32px !important;
+        height: 32px !important;
+        line-height: 32px !important;
+        font-size: 16px !important;
+    }
+}
+
+/* Fix untuk iOS */
+@supports (-webkit-touch-callout: none) {
+    .leaflet-container {
+        -webkit-tap-highlight-color: transparent;
+    }
 }
 </style>

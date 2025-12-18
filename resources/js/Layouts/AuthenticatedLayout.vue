@@ -55,10 +55,6 @@ onMounted(() => {
     applyDarkMode()
 })
 
-watch(darkMode, (newValue) => {
-    applyDarkMode()
-})
-
 </script>
 
 <template>
