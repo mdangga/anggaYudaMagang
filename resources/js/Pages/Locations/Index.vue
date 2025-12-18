@@ -1,9 +1,12 @@
 <script setup>
 import axios from 'axios'
 import QRCode from 'qrcode'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ModalDelete from '@/Components/ModalDelete.vue'
-import { Head, router, Link } from '@inertiajs/vue3'
+import Pagination from '@/Components/Pagination.vue';
+import { Head, router } from '@inertiajs/vue3'
 import { ref, computed } from 'vue'
 
 const props = defineProps({
@@ -51,8 +54,10 @@ const generateQrCode = async () => {
         showQrModal.value = true
     } catch (err) {
         console.error('Error generating QR:', err)
-        error.value = 'Gagal generate QR Code. Silakan coba lagi.'
-        alert(error.value)
+        toast.error("Gagal generate QR Code. Silakan coba lagi.", {
+            position: "top-right",
+            autoClose: 5000,
+        });
     } finally {
         loading.value = false
     }
@@ -77,11 +82,17 @@ const copyLink = () => {
 
     navigator.clipboard.writeText(qrData.value.link)
         .then(() => {
-            alert('Link berhasil disalin ke clipboard!')
+            toast.success("Link berhasil disalin ke clipboard !", {
+                position: "top-right",
+                autoClose: 5000,
+            });
         })
         .catch(err => {
             console.error('Gagal menyalin link:', err)
-            alert('Gagal menyalin link')
+            toast.error("Gagal menyalin link !", {
+                position: "top-right",
+                autoClose: 5000,
+            });
         })
 }
 
@@ -130,12 +141,23 @@ const selectedLoc = computed(() => {
     )
 })
 
-// DIUBAH: Ganti 'warningMessage' untuk lokasi
+const paginationLinks = computed(() => {
+    if (!props.locations || !props.locations.links) {
+        return []
+    }
+
+    // Jika format dari Laravel pagination
+    return props.locations.links.map(link => ({
+        url: link.url,
+        label: link.label,
+        active: link.active
+    }))
+})
+
 const warningMessage = computed(() => {
     return 'Data yang dihapus tidak dapat dikembalikan.'
 })
 
-// DIUBAH: Ganti pesan delete untuk lokasi
 const deleteMessage = computed(() => {
     return `Apakah Anda yakin ingin menghapus lokasi "${itemName.value}"? Tindakan ini tidak dapat dibatalkan.`
 })
@@ -144,18 +166,23 @@ const approveRequest = () => {
     router.post(route('locations.approve', selectedLocation.value.id_location), {}, {
         preserveScroll: true,
         onSuccess: () => {
-            alert(`Lokasi magang untuk telah disetujui.`)
+            toast.success("Lokasi magang telah disetujui !", {
+                position: "top-right",
+                autoClose: 5000,
+            });
             showDetailModal.value = false
             selectedLocation.value = null
         },
         onError: (errors) => {
             console.error('Approval error:', errors)
-            alert('Gagal menyetujui lokasi magang. Silakan coba lagi.')
+            toast.error("Gagal menyetujui lokasi magang. Silakan coba lagi !", {
+                position: "top-right",
+                autoClose: 5000,
+            });
         }
     })
 }
 
-// DIUBAH: Ganti fungsi delete untuk lokasi
 const deleteItem = () => {
     deleting.value = true
 
@@ -163,18 +190,31 @@ const deleteItem = () => {
         preserveScroll: true,
         preserveState: true,
         onSuccess: () => {
+            toast.success("Lokasi magang berhasil dihapus !", {
+                position: "top-right",
+                autoClose: 5000,
+            });
             showDeleteModal.value = false
             itemIdToDelete.value = null
             itemName.value = ''
         },
         onError: (errors) => {
             console.error('Delete error:', errors)
-            alert('Gagal menghapus data. Silakan coba lagi.')
+            toast.error("Gagal menghapus lokasi magang. Silakan coba lagi !", {
+                position: "top-right",
+                autoClose: 5000,
+            });
         },
         onFinish: () => {
             deleting.value = false
         }
     })
+}
+
+const handlePageClick = (url) => {
+    if (url) {
+        router.visit(url)
+    }
 }
 </script>
 
@@ -214,9 +254,7 @@ const deleteItem = () => {
                     </svg>
 
                     <!-- QR Code Icon -->
-                    <svg v-else
-                        class="w-4 h-4 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
-                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" />
                     </svg>
@@ -240,12 +278,12 @@ const deleteItem = () => {
 
         <div class="py-6">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white dark:bg-neutral-800 shadow-sm rounded-lg overflow-hidden">
-                    <div class="p-6">
+                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden">
+                    <div class="p-4">
 
                         <div class="overflow-x-auto">
-                            <table class="min-w-full border border-gray-200 dark:border-neutral-700">
-                                <thead class="bg-gray-100 dark:bg-neutral-800">
+                            <table class="min-w-full border-2 border-gray-200 dark:border-slate-700">
+                                <thead class="bg-gray-100 dark:bg-slate-900">
                                     <tr>
                                         <th class="th">No</th>
                                         <th class="th">Mahasiswa</th>
@@ -261,7 +299,7 @@ const deleteItem = () => {
 
                                 <tbody>
                                     <tr v-for="(item, index) in locations.data" :key="item.id_location"
-                                        class="border-t dark:border-neutral-700 hover:bg-gray-50 dark:hover:bg-neutral-700">
+                                        class="border-t dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700">
                                         <td class="td">
                                             {{ index + 1 + (locations.current_page - 1) * locations.per_page }}
                                         </td>
@@ -275,7 +313,7 @@ const deleteItem = () => {
                                             <div class="font-medium">
                                                 {{ item.name_location }}
                                             </div>
-                                            <div class="text-sm text-neutral-500 dark:text-neutral-400">
+                                            <div class="text-sm text-neutral-500 dark:text-slate-400">
                                                 {{ item.description }}
                                             </div>
                                         </td>
@@ -290,7 +328,7 @@ const deleteItem = () => {
                                                 {{ item.department?.name_department }}
                                                 ({{ item.department?.degree_level }})
                                             </div>
-                                            <div class="text-sm text-neutral-500 dark:text-neutral-400">
+                                            <div class="text-sm text-neutral-500 dark:text-slate-400">
                                                 {{ item.department?.faculty?.name_faculty }}
                                             </div>
                                         </td>
@@ -306,17 +344,10 @@ const deleteItem = () => {
                                         </td>
                                         <td class="td text-center gap-2 flex justify-center">
                                             <button @click="openDetailModal(item)"
-                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-primary-300 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
-
-                                                <!-- Shimmer Effect -->
-                                                <div
-                                                    class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
-                                                </div>
-
+                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-info hover:bg-info-600 text-neutral-50 hover:text-neutral-100 font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
                                                 <!-- Document Icon -->
-                                                <svg xmlns="http://www.w3.org/2000/svg"
-                                                    class="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
-                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none"
+                                                    stroke="currentColor" viewBox="0 0 24 24">
                                                     <path fill="currentColor"
                                                         d="M20 3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2m-9 14H5v-2h6zm8-4H5v-2h14zm0-4H5V7h14z" />
                                                 </svg>
@@ -327,16 +358,10 @@ const deleteItem = () => {
                                                 </span>
                                             </button>
                                             <button @click="openDeleteModal(item.id_location, item.name_location)"
-                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-gradient-to-l from-danger-400 to-danger-600 hover:from-danger-600 hover:to-danger-700 text-neutral-900 dark:text-gray-200 hover:text-white font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
-
-                                                <!-- Shimmer Effect -->
-                                                <div
-                                                    class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
-                                                </div>
-
+                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-danger hover:bg-danger-600 text-neutral-50 hover:text-neutral-100 font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
                                                 <!-- Trash Icon -->
-                                                <svg class="w-3.5 h-3.5 transition-transform duration-300 group-hover:scale-110 group-hover:rotate-12"
-                                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
+                                                    viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                         stroke-width="2"
                                                         d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -359,18 +384,7 @@ const deleteItem = () => {
                                 </tbody>
                             </table>
                         </div>
-
-                        <div class="mt-6 flex justify-end">
-                            <div class="flex gap-1">
-                                <template v-for="link in locations.links" :key="link.label">
-                                    <a v-if="link.url" :href="link.url" v-html="link.label"
-                                        class="px-3 py-1 border rounded text-sm" :class="{
-                                            'bg-blue-600 text-white': link.active
-                                        }" />
-                                </template>
-                            </div>
-                        </div>
-
+                        <Pagination v-if="paginationLinks.length > 0" :links="paginationLinks" />
                     </div>
                 </div>
             </div>
