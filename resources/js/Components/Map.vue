@@ -87,6 +87,25 @@ const addMarkers = () => {
         </div>
       `)
 
+      // Add hover tooltip
+      .bindTooltip(`
+          <div class="text-sm font-semibold text-neutral-900">${location.name_location}</div>
+          <div class="text-xs text-neutral-600 mt-0.5">${location.category.name_category}</div>
+      `, {
+        direction: 'top',
+        offset: [0, -40],
+        opacity: 0.9,
+        className: 'custom-tooltip'
+      })
+
+      // Show tooltip on hover
+      .on('mouseover', function (e) {
+        this.openTooltip()
+      })
+      .on('mouseout', function (e) {
+        this.closeTooltip()
+      })
+
     markers.value[location.id_location] = marker
   })
 
@@ -98,7 +117,6 @@ const addMarkers = () => {
     }
   }
 }
-
 const initMap = async () => {
   try {
     await nextTick()

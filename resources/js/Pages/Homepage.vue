@@ -15,6 +15,8 @@ const darkMode = ref(false)
 const sidebarOpen = ref(false)
 const isMobile = ref(false)
 const mapComponentRef = ref(null)
+const currentImageIndex = ref(0)
+const autoSlideInterval = ref(null)
 
 provide('darkMode', darkMode)
 provide('toggleDarkMode', (value) => {
@@ -53,6 +55,7 @@ const selectLocation = async (location) => {
   selectedLocation.value = location;
   showAutocomplete.value = false;
   highlightedIndex.value = -1;
+  currentImageIndex.value = 0;
 
   if (isMobile.value) sidebarOpen.value = true;
 
@@ -66,6 +69,12 @@ const selectLocation = async (location) => {
     const data = await response.json();
     console.log('Location detail fetched:', data);
     selectedLocation.value = data;
+
+    if (data.images && data.images.length > 1) {
+      setTimeout(() => {
+        startAutoSlide()
+      }, 1000)
+    }
   } catch (error) {
     console.error('Error fetching location detail:', error);
   }
@@ -162,7 +171,45 @@ const openWhatsApp = (phone, locationName) => {
   window.open(url, '_blank')
 }
 
+const nextImage = () => {
+  if (selectedLocation.value?.images?.length) {
+    currentImageIndex.value = (currentImageIndex.value + 1) % selectedLocation.value.images.length
+  }
+}
 
+const prevImage = () => {
+  if (selectedLocation.value?.images?.length) {
+    currentImageIndex.value = currentImageIndex.value <= 0
+      ? selectedLocation.value.images.length - 1
+      : currentImageIndex.value - 1
+  }
+}
+
+const goToImage = (index) => {
+  currentImageIndex.value = index
+  resetAutoSlide()
+}
+
+const startAutoSlide = () => {
+  if (selectedLocation.value?.images?.length > 1) {
+    stopAutoSlide()
+    autoSlideInterval.value = setInterval(() => {
+      nextImage()
+    }, 3000)
+  }
+}
+
+const stopAutoSlide = () => {
+  if (autoSlideInterval.value) {
+    clearInterval(autoSlideInterval.value)
+    autoSlideInterval.value = null
+  }
+}
+
+const resetAutoSlide = () => {
+  stopAutoSlide()
+  startAutoSlide()
+}
 const handleResize = () => {
   checkMobile()
   if (mapComponentRef.value) {
@@ -242,6 +289,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
+  stopAutoSlide()
 })
 
 // Watchers
@@ -254,6 +302,16 @@ watch(sidebarOpen, (newValue) => {
 })
 
 watch(selectedLocation, (newLocation) => {
+  if (!newLocation) {
+    currentImageIndex.value = 0
+    stopAutoSlide()
+  } else if (newLocation?.images?.length > 1) {
+    // Start autoslide ketika ada lebih dari 1 gambar
+    setTimeout(() => {
+      startAutoSlide()
+    }, 1000)
+  }
+
   if (!newLocation && sidebarOpen.value && isMobile.value) {
     sidebarOpen.value = false
   }
@@ -344,11 +402,68 @@ watch(selectedLocation, (newLocation) => {
         <div v-else class="bg-white detail-card dark:bg-neutral-800"
           :class="{ ' rounded-xl shadow-md border border-neutral-100 dark:border-neutral-700': isMobile }">
 
-          <!-- Thumbnail -->
-          <div class="relative">
-            <div v-for="img in selectedLocation.images" :key="img.id_image">
-              <img :src="`/storage/${img.image_path}`" :alt="img.alt_text || 'Image'"
-                class="object-cover w-full h-[235px]" />
+          <div v-if="selectedLocation"
+            class="relative overflow-hidden group h-[235px] bg-neutral-100 dark:bg-neutral-700">
+            <!-- Carousel Container -->
+            <div class="relative w-full h-full">
+              <!-- Images Container dengan animasi -->
+              <div class="relative flex w-full h-full transition-transform duration-300 ease-in-out"
+                :style="{ transform: `translateX(-${currentImageIndex * 100}%)` }">
+                <div v-for="(image, index) in selectedLocation.images" :key="image.id_image"
+                  class="flex-shrink-0 w-full h-full">
+                  <img :src="`/storage/${image.image_path}`" :alt="image.alt_text || selectedLocation.name_location"
+                    class="object-cover w-full h-full" />
+                </div>
+
+                <!-- Fallback jika tidak ada gambar -->
+                <div v-if="!selectedLocation.images || selectedLocation.images.length === 0"
+                  class="flex items-center justify-center flex-shrink-0 w-full h-full bg-gradient-to-br from-neutral-200 to-neutral-300 dark:from-neutral-700 dark:to-neutral-800">
+                  <svg class="w-16 h-16 text-neutral-400 dark:text-neutral-600" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
+                      d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+              </div>
+
+              <!-- Navigation Areas - pause saat hover -->
+              <div v-if="selectedLocation.images && selectedLocation.images.length > 1" class="absolute inset-0 flex"
+                @mouseenter="stopAutoSlide" @mouseleave="startAutoSlide">
+                <!-- Left Click Area (25% width) -->
+                <div @click.stop="prevImage"
+                  class="relative w-1/4 h-full transition-all duration-200 cursor-pointer group/left hover:bg-gradient-to-r from-black/20 to-transparent">
+                  <!-- Left SVG Icon -->
+                  <div class="absolute transform -translate-y-1/2 left-2 top-1/2">
+                    <svg
+                      class="w-5 h-5 text-white transition-opacity duration-200 opacity-0 group-hover/left:opacity-100"
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Middle Area (50% width) -->
+                <div class="w-1/2 h-full"></div>
+
+                <!-- Right Click Area (25% width) -->
+                <div @click.stop="nextImage"
+                  class="relative w-1/4 h-full transition-all duration-200 cursor-pointer group/right hover:bg-gradient-to-l from-black/20 to-transparent">
+                  <!-- Right SVG Icon -->
+                  <div class="absolute transform -translate-y-1/2 right-2 top-1/2">
+                    <svg
+                      class="w-5 h-5 text-white transition-opacity duration-200 opacity-0 group-hover/right:opacity-100"
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image Counter -->
+            <div v-if="selectedLocation.images && selectedLocation.images.length > 1"
+              class="absolute px-2 py-1 text-xs rounded-full text-neutral-700 dark:text-neutral-100 bottom-2 right-2 bg-white/90 dark:bg-neutral-800/90">
+              {{ currentImageIndex + 1 }} / {{ selectedLocation.images.length }}
             </div>
 
             <!-- Tombol tutup card -->
@@ -703,6 +818,10 @@ watch(selectedLocation, (newLocation) => {
   padding: 0 !important;
 }
 
+.leaflet-popup-content p {
+  margin: 0 !important;
+}
+
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
@@ -736,6 +855,27 @@ watch(selectedLocation, (newLocation) => {
 
 .dark .detail-panel::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
+}
+
+.leaflet-control-attribution.leaflet-control {
+  margin-left: 10px;
+}
+
+/* carousel */
+.carousel-slide {
+  transition: transform 0.3s ease-in-out;
+}
+
+.carousel-dot {
+  transition: all 0.3s ease;
+}
+
+.carousel-button {
+  transition: all 0.2s ease;
+}
+
+.carousel-button:hover {
+  transform: scale(1.1);
 }
 
 /* Animations */
