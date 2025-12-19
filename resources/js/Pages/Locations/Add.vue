@@ -16,6 +16,8 @@ import ImageUpload from '@/Components/ImageUpload.vue'
 import { useForm, usePage, Head } from '@inertiajs/vue3'
 import { ref, onMounted, watch, computed } from 'vue'
 import 'leaflet/dist/leaflet.css'
+import { toast } from 'vue3-toastify';
+import 'vue3-toastify/dist/index.css'
 
 /* ================================
    PROPS & USER DATA
@@ -105,8 +107,20 @@ const form = useForm({
 const submit = () => {
     form.post(route('locations.store'), {
         preserveScroll: true,
-        onSuccess: () => form.reset(),
-        onError: (errors) => console.log('Form submission errors:', errors)
+        onSuccess: () => {
+            toast.success("Permintaan berhasil dikirim !", {
+                position: "top-right",
+                autoClose: 5000,
+            });
+            form.reset()
+        },
+        onError: (errors) => {
+            toast.error("Error! Data gagal validasi", {
+                position: "top-right",
+                autoClose: 5000,
+            });
+            console.log('Form submission errors:', errors)
+        }
     })
 }
 </script>
@@ -122,7 +136,7 @@ const submit = () => {
                 <div class="flex items-center gap-3 mb-4">
                     <div
                         class="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="text-white text-lg" viewBox="0 0 24 24">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white text-lg" viewBox="0 0 24 24">
                             <path fill="currentColor" fill-rule="evenodd"
                                 d="M11.291 21.706L12 21zM12 21l.708.706a1 1 0 0 1-1.417 0l-.006-.007l-.017-.017l-.062-.063a48 48 0 0 1-1.04-1.106a50 50 0 0 1-2.456-2.908c-.892-1.15-1.804-2.45-2.497-3.734C4.535 12.612 4 11.248 4 10c0-4.539 3.592-8 8-8s8 3.461 8 8c0 1.248-.535 2.612-1.213 3.87c-.693 1.286-1.604 2.585-2.497 3.735a50 50 0 0 1-3.496 4.014l-.062.063l-.017.017l-.006.006zm0-8a3 3 0 1 0 0-6a3 3 0 0 0 0 6"
                                 clip-rule="evenodd" />
@@ -220,7 +234,7 @@ const submit = () => {
                         </div>
 
                         <div class="flex items-center gap-4">
-                            <Transition enter-active-class="transition-opacity duration-300"
+                            <!-- <Transition enter-active-class="transition-opacity duration-300"
                                 leave-active-class="transition-opacity duration-300" enter-from-class="opacity-0"
                                 leave-to-class="opacity-0">
                                 <p v-if="form.recentlySuccessful" class="flex text-sm text-success font-medium">
@@ -231,7 +245,7 @@ const submit = () => {
                                     </svg>
                                     Permintaan berhasil dikirim!
                                 </p>
-                            </Transition>
+                            </Transition> -->
 
                             <PrimaryButton :disabled="form.processing" class="btn-primary">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2" viewBox="0 0 24 24">

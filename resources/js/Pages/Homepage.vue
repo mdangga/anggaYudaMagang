@@ -195,7 +195,7 @@ const startAutoSlide = () => {
     stopAutoSlide()
     autoSlideInterval.value = setInterval(() => {
       nextImage()
-    }, 3000)
+    }, 5000)
   }
 }
 
@@ -618,15 +618,11 @@ watch(selectedLocation, (newLocation) => {
       <!-- Footer -->
       <div id="sidebar-footer" class="p-3 border-t sidebar-footer border-neutral-100 dark:border-neutral-700">
         <div class="flex items-center justify-between">
-          <!-- Tambah Lokasi Button -->
-          <!-- <Link :href="route('request-locations.create')">
-            <button
-              class="flex items-center gap-2 px-3 py-2 transition-all duration-200 rounded-lg text-neutral-700 dark:text-neutral-300 hover:text-neutral-900 dark:hover:text-white hover:bg-primary hover:bg-opacity-20 dark:hover:bg-primary dark:hover:bg-opacity-20 active:scale-95"
-              title="Tambah Lokasi Baru">
-              <i class="text-sm fas fa-map-marker-alt"></i>
-              <span class="hidden text-sm font-medium md:inline">Tambah Lokasi</span>
-            </button>
-          </Link> -->
+
+          <p class="flex items-center gap-2 px-3 py-2 text-xs text-neutral-400">
+            &copy; 2025 Angga & Yuda IF23B.
+          </p>
+
 
           <!-- Dark Mode Toggle Component -->
           <DarkModeToggle v-model="darkMode" @toggle="toggleDarkMode" />

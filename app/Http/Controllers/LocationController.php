@@ -80,9 +80,9 @@ class LocationController extends Controller
         try {
             Log::info('getData function called');
 
-            $location = Locations::select('id_location', 'id_category', 'id_department', 'student_name', 'nim', 'name_location', 'description', 'contact', 'longitude', 'latitude', 'created_at')->with([
+            $location = Locations::select('id_location', 'id_category', 'id_department', 'student_name', 'nim', 'name_location', 'description', 'contact', 'longitude', 'latitude', 'created_at', 'approved_at')->with([
                 'category:id_category,name_category',
-                'department:id_department,name_department,id_faculty',
+                'department:id_department,name_department,degree_level,id_faculty',
                 'department.faculty:id_faculty,name_faculty',
                 'images:id_image,id_location,image_path,alt_text'
             ])->findOrFail($id);
