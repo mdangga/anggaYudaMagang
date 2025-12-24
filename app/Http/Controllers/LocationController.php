@@ -7,6 +7,7 @@ use App\Models\Categories;
 use App\Models\Faculties;
 use App\Models\Images;
 use App\Models\Locations;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
@@ -15,20 +16,24 @@ class LocationController extends Controller
 {
     public function index()
     {
-        $locations = Locations::with([
-            'category:id_category,name_category',
-            'department:id_department,name_department,degree_level,id_faculty',
-            'department.faculty:id_faculty,name_faculty',
-            'images:id_image,id_location,image_path,alt_text'
-        ])
-            ->latest()
-            ->paginate(10);
-
-        return Inertia::render('Locations/Index', [
-            'locations' => $locations
-        ]);
+        return Inertia::render('Locations/Index');
     }
 
+    public function ajax()
+    {
+        $locations =  Locations::with([
+                'category:id_category,name_category',
+                'department:id_department,name_department,degree_level,id_faculty',
+                'department.faculty:id_faculty,name_faculty',
+                'images:id_image,id_location,image_path,alt_text'
+            ])
+                ->latest()
+                ->get();
+
+        return response()->json([
+            'data' => $locations
+        ]);
+    }
 
     //? method to get location data json
     public function getData()

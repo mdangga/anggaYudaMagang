@@ -227,8 +227,7 @@ async function getCategories() {
 </script>
 
 <template>
-
-    <Head title="Dashboard Admin" />
+    <Head :title="`Dashboard Admin - ${$page.props.profile_web.app_name}`" />
 
     <AuthenticatedLayout>
         <template #header>
