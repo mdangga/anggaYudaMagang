@@ -69,8 +69,8 @@ const submit = () => {
 </script>
 
 <template>
-
-    <Head title="Form Lokasi" />
+    <Head :title="`Form Fakultas - ${$page.props.profile_web.app_name}`" />
+    
     <div class="min-h-screen bg-neutral-50 dark:bg-neutral-900 py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-4xl mx-auto">
 

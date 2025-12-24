@@ -1,16 +1,224 @@
 <script setup>
+/* =========================
+ * Core Imports
+ * ========================= */
+import { Head, Link, router } from '@inertiajs/vue3'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import axios from 'axios'
+
+/* =========================
+ * Third-party
+ * ========================= */
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
+
+/* =========================
+ * AG Grid Imports
+ * ========================= */
+import { AgGridVue } from 'ag-grid-vue3'
+import { ModuleRegistry, AllCommunityModule, colorSchemeDarkBlue, themeQuartz } from 'ag-grid-community'
+
+ModuleRegistry.registerModules([
+    AllCommunityModule,
+]);
+
+/* =========================
+ * Components
+ * ========================= */
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 import ModalDelete from '@/Components/ModalDelete.vue'
-import { toast } from 'vue3-toastify';
-import 'vue3-toastify/dist/index.css'
-import { Head, Link, router } from '@inertiajs/vue3'
-import Pagination from '@/Components/Pagination.vue'
-import { ref, inject, computed } from 'vue'
 
-const props = defineProps({
-    departments: Object
+
+/* =========================
+ * Toast Helper
+ * ========================= */
+const notify = {
+    success: (msg) => toast.success(msg, { autoClose: 5000 }),
+    error: (msg) => toast.error(msg, { autoClose: 5000 })
+}
+
+/* =========================
+ * AG GRID – STATE
+ * ========================= */
+
+const gridApi = ref(null)
+const quickFilterText = ref('')
+const rowData = ref([])
+const theme = ref(null)
+
+/* =========================
+ * AG Grid Configuration
+ * ========================= */
+
+const columnDefs = ref([
+    {
+        headerName: 'No',
+        valueGetter: "node.rowIndex + 1",
+        width: 150,
+        sortable: false,
+        flex: 1,
+    },
+    {
+        field: 'name_department',
+        headerName: 'Nama Jurusan',
+        sortable: true,
+        filter: true,
+        flex: 1,
+    },
+    {
+        field: 'faculty.name_faculty',
+        headerName: 'Nama Fakultas',
+        sortable: true,
+        filter: true,
+        flex: 1,
+    },
+    {
+        field: 'locations_count',
+        headerName: 'Jumlah Lokasi',
+        sortable: true,
+        width: 150,
+        cellStyle: { textAlign: 'center' },
+    },
+    {
+        headerName: 'Aksi',
+        width: 180,
+        cellRenderer: (params) => {
+            const wrapper = document.createElement('div')
+            wrapper.className = 'flex h-full items-center gap-2'
+
+            // Button Edit
+            const editBtn = document.createElement('button')
+            editBtn.className = 'px-3 py-1 text-xs bg-sky-500 text-white rounded hover:bg-sky-600 flex items-center gap-1 transition-colors'
+            editBtn.innerHTML = `
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                Edit
+            `
+            // Menggunakan Inertia router visit
+            editBtn.onclick = () => router.visit(route('department.edit', params.data.id_department))
+
+            // Button Delete
+            const deleteBtn = document.createElement('button')
+            deleteBtn.className = 'px-3 py-1 text-xs bg-red-500 text-white rounded hover:bg-red-600 flex items-center gap-1 transition-colors'
+            deleteBtn.innerHTML = `
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Hapus
+            `
+            deleteBtn.onclick = () => openDeleteModal(params.data.id_department, params.data.name_department)
+
+            wrapper.appendChild(editBtn)
+            wrapper.appendChild(deleteBtn)
+
+            return wrapper
+        }
+    }
+])
+
+const gridOptions = ref({
+    animateRows: false,
+    pagination: true,
+    paginationPageSize: 5,
+    paginationPageSizeSelector: [1, 5, 10, 20, 50, 100],
+    domLayout: 'autoHeight',
 })
 
+const onGridReady = (params) => {
+    gridApi.value = params.api
+    fetchDepartment()
+}
+
+const EXCLUDED_COLUMNS = ['aksi']
+
+const exportCsv = () => {
+    if (!gridApi.value) return
+
+    const allColumnIds = gridApi.value
+        .getColumnDefs()
+        .map(col => col.field)
+        .filter(Boolean)
+
+    const exportColumnIds = allColumnIds.filter(
+        colId => !EXCLUDED_COLUMNS.includes(colId)
+    )
+
+    gridApi.value.exportDataAsCsv({
+        columnKeys: exportColumnIds,
+        fileName: 'data-jurusan.csv'
+    })
+}
+
+// Watcher untuk Filter Cepat
+watch(quickFilterText, (val) => {
+    if (gridApi.value) gridApi.value.setGridOption('quickFilterText', val)
+})
+
+/* =========================
+ * THEME HANDLING (Dark Mode Fix)
+ * ========================= */
+const getTheme = (isDark) => {
+    return isDark
+        ? themeQuartz
+            .withParams({
+                spacing: 12,
+                accentColor: '#3b82f6',
+                backgroundColor: '#1e293b',
+                foregroundColor: '#f8fafc',
+                headerBackgroundColor: '#0f172a',
+                borderColor: '#334155',
+            })
+            .withPart(colorSchemeDarkBlue)
+        : themeQuartz.withParams({
+            spacing: 12,
+            accentColor: '#2563eb',
+        })
+}
+
+// Fungsi update tema yang akan dipanggil observer
+const updateGridTheme = () => {
+    const isDark = document.documentElement.classList.contains('dark')
+    theme.value = getTheme(isDark)
+}
+
+// Mutation Observer Variable
+let themeObserver = null
+
+/* =========================
+ * AG GRID – AJAX & LIFECYCLE
+ * ========================= */
+const fetchDepartment = async () => {
+    try {
+        const { data } = await axios.get('/jurusan/ajax')
+        rowData.value = data.data
+    } catch (e) {
+        console.error('error fetching:', e)
+        notify.error('gagal memuat data')
+    }
+}
+
+onMounted(() => {
+    updateGridTheme()
+    fetchDepartment()
+
+    themeObserver = new MutationObserver((mutations) => {
+        mutations.forEach((mutation) => {
+            if (mutation.attributeName === 'class') {
+                updateGridTheme()
+            }
+        })
+    })
+
+    themeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['class']
+    })
+})
+
+onUnmounted(() => {
+    if (themeObserver) themeObserver.disconnect()
+})
+
+/* =========================
+ * DELETE LOGIC
+ * ========================= */
 const showDeleteModal = ref(false)
 const deleting = ref(false)
 const itemIdToDelete = ref(null)
@@ -32,32 +240,16 @@ const closeDeleteModal = () => {
 
 const selectedDepartment = computed(() => {
     if (!itemIdToDelete.value) return null
-    return props.departments.data.find(
-        c => c.id_department === itemIdToDelete.value
-    )
+    return props.department.data.find(c => c.id_department === itemIdToDelete.value)
 })
 
-const paginationLinks = computed(() => {
-    if (!props.departments || !props.departments.links) {
-        return []
-    }
-
-    // Jika format dari Laravel pagination
-    return props.departments.links.map(link => ({
-        url: link.url,
-        label: link.label,
-        active: link.active
-    }))
-})
 const warningMessage = computed(() => {
     if (!selectedDepartment.value) {
         return 'Data yang dihapus tidak dapat dikembalikan.'
     }
-
     if (selectedDepartment.value.locations_count > 0) {
         return `Jurusan ini memiliki ${selectedDepartment.value.locations_count} lokasi. Menghapus jurusan akan mempengaruhi data terkait.`
     }
-
     return 'Data yang dihapus tidak dapat dikembalikan.'
 })
 
@@ -67,37 +259,22 @@ const deleteMessage = computed(() => {
 
 const deleteItem = () => {
     deleting.value = true
-
     router.delete(route('department.destroy', itemIdToDelete.value), {
         preserveScroll: true,
         onSuccess: () => {
-            toast.success("Jurusan berhasil dihapus !", {
-                position: "top-right",
-                autoClose: 5000,
-            });
+            toast.success("Jurusan berhasil dihapus !", { position: "top-right", autoClose: 3000 });
             showDeleteModal.value = false
             itemIdToDelete.value = null
             itemName.value = ''
         },
-        onError: (errors) => {
-            console.error('Delete error:', errors)
-        },
-        onFinish: () => {
-            deleting.value = false
-        }
+        onError: (errors) => console.error('Delete error:', errors),
+        onFinish: () => deleting.value = false
     })
-}
-
-const handlePageClick = (url) => {
-    if (url) {
-        router.visit(url)
-    }
 }
 </script>
 
 <template>
-
-    <Head title="Daftar Jurusan" />
+    <Head :title="`Jurusan - ${$page.props.profile_web.app_name}`" />
 
     <AuthenticatedLayout>
         <template #header>
@@ -145,80 +322,33 @@ const handlePageClick = (url) => {
         <div class="py-6">
             <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                 <div class="bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden">
-                    <div class="p-6">
+                    <div class="p-4">
+                        <div class="flex gap-2 justify-between items-center p-3">
+                            <input type="text" placeholder="Cari..."
+                                class="form-input w-96 rounded-xl dark:bg-slate-700 dark:text-neutral-50"
+                                v-model="quickFilterText" />
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full border-2 border-gray-200 dark:border-slate-700">
-                                <thead class="bg-gray-100 dark:bg-slate-900">
-                                    <tr>
-                                        <th class="th">No</th>
-                                        <th class="th">Nama Jurusan</th>
-                                        <th class="th">Nama Fakultas</th>
-                                        <th class="th">Jumlah Lokasi</th>
-                                        <th class="th text-center">Aksi</th>
-                                    </tr>
-                                </thead>
-
-                                <tbody>
-                                    <tr v-for="(item, index) in departments.data" :key="item.id_department"
-                                        class="border-t dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700">
-                                        <td class="td">
-                                            {{ index + 1 + (departments.current_page - 1) * departments.per_page }}
-                                        </td>
-                                        <td class="td">
-                                            {{ item.name_department }}
-                                        </td>
-                                        <td class="td">
-                                            {{ item.faculty.name_faculty }}
-                                        </td>
-                                        <td class="td">
-                                            {{ item.locations_count }}
-                                        </td>
-                                        <td class="td text-start space-x-2">
-                                            <Link :href="route('department.edit', item.id_department)"
-                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-info hover:bg-info-600 text-neutral-50 hover:text-neutral-100  font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
-                                                <!-- Edit Icon -->
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
-
-                                                <!-- Button Text -->
-                                                <span class="relative">
-                                                    Edit
-                                                </span>
-                                            </Link>
-
-                                            <button @click="openDeleteModal(item.id_department, item.name_department)"
-                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-danger hover:bg-danger-600 text-neutral-50 hover:text-neutral-100 font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
-
-                                                <!-- Trash Icon -->
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
-
-                                                <!-- Button Text -->
-                                                <span class="relative">
-                                                    Hapus
-                                                </span>
-                                            </button>
-                                        </td>
-                                    </tr>
-
-                                    <tr v-if="departments.data.length === 0">
-                                        <td colspan="9" class="text-center py-6 text-neutral-500 dark:text-neutral-400">
-                                            Data belum tersedia
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
+                            <!-- button download csv -->
+                            <button
+                                class="flex justify-between items-center gap-2 px-3 py-3 text-sm bg-emerald-600 text-white rounded-xl"
+                                @click="exportCsv">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 16 16">
+                                    <path fill="currentColor" fill-rule="evenodd"
+                                        d="M1.5 1.5A.5.5 0 0 1 2 1h6.5a.5.5 0 0 1 .354.146l2.5 2.5A.5.5 0 0 1 11.5 4v2h-1V5H8a.5.5 0 0 1-.5-.5V2h-5v12h8v-.5h1v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5zm7 .707V4h1.793zm2.55 5.216A3 3 0 0 1 11 7h1q-.001.004.007.069q.01.07.029.182c.026.15.063.34.11.56c.092.44.216.982.34 1.512s.25 1.043.343 1.425l.062.252h.218l.062-.252c.093-.382.218-.896.342-1.425c.125-.53.249-1.072.341-1.512c.047-.22.085-.41.11-.56q.02-.111.029-.182L14 7h1c0 .113-.024.272-.05.423c-.03.165-.07.369-.117.594a70 70 0 0 1-.346 1.535a167 167 0 0 1-.459 1.895l-.043.174A.5.5 0 0 1 13.5 12h-1a.5.5 0 0 1-.485-.379l-.043-.174a192 192 0 0 1-.459-1.895a70 70 0 0 1-.346-1.535a18 18 0 0 1-.117-.594M4 8a1 1 0 0 1 1-1h2v1H5v3h2v1H5a1 1 0 0 1-1-1zm3.5 0a1 1 0 0 1 1-1h2v1h-2v1h1a1 1 0 0 1 1 1v1a1 1 0 0 1-1 1h-2v-1h2v-1h-1a1 1 0 0 1-1-1z"
+                                        clip-rule="evenodd" />
+                                </svg>
+                                Download
+                            </button>
                         </div>
-                        <Pagination v-if="paginationLinks.length > 0" :links="paginationLinks" />
+
+                        <div v-if="rowData.length > 0">
+                            <AgGridVue :theme="theme" :gridOptions="gridOptions" :columnDefs="columnDefs"
+                                :rowData="rowData" @grid-ready="onGridReady" style="height: 100%; width: 100%;" />
+                        </div>
+
+                        <div v-else class="text-center p-8 text-gray-500 dark:text-gray-400">
+                            <p>Data belum tersedia</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -230,37 +360,3 @@ const handlePageClick = (url) => {
 
     </AuthenticatedLayout>
 </template>
-
-<style scoped>
-.th {
-    @apply px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-gray-200;
-}
-
-.dark .th {
-    @apply text-neutral-200 border-neutral-700;
-}
-
-.td {
-    @apply px-4 py-3 text-sm text-neutral-700 align-top;
-}
-
-.dark .td {
-    @apply text-neutral-300;
-}
-
-.btn {
-    @apply px-3 py-1.5 text-xs rounded transition-colors duration-200 inline-flex items-center justify-center;
-}
-
-.btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700;
-}
-
-.btn-secondary {
-    @apply bg-gray-600 text-white hover:bg-gray-700 dark:bg-neutral-700 dark:hover:bg-neutral-600;
-}
-
-.btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700;
-}
-</style>

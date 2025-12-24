@@ -13,8 +13,15 @@ class FacultyController extends Controller
     {
         $faculties = Faculties::withCount('departments')->get();
 
-        return Inertia::render('Faculties/Index', [
-            'faculties' => $faculties,
+        return Inertia::render('Faculties/Index');
+    }
+
+    public function ajax()
+    {
+        $faculties = Faculties::withCount('departments')->get();
+
+        return response()->json([
+            'data' => $faculties
         ]);
     }
 

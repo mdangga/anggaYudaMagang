@@ -13,16 +13,21 @@ class DepartmentController extends Controller
 {
     public function index()
     {
+        return Inertia::render('Departments/Index');
+    }
+
+    public function ajax()
+    {
         $departments = Departments::query()
             ->with([
                 'faculty:id_faculty,name_faculty'
             ])
             ->withCount('locations')
-            ->paginate(10);
+            ->get();
 
 
-        return Inertia::render('Departments/Index', [
-            'departments' => $departments,
+        return response()->json([
+            'data' => $departments
         ]);
     }
 

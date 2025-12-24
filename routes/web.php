@@ -57,6 +57,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('categories')->group(function () {
         Route::get('/get-categories', [CategoryController::class, 'getStatCategories'])->name('category.getStat');
         Route::get('/', [CategoryController::class, 'index'])->name('category.index');
+        Route::get('/ajax', [CategoryController::class, 'ajax']);
         Route::get('/create', [CategoryController::class, 'create'])->name('category.create');
         Route::post('/', [CategoryController::class, 'store'])->name('category.store');
         Route::get('/edit/{id}', [CategoryController::class, 'edit'])->name('category.edit');
@@ -67,6 +68,7 @@ Route::middleware('auth')->group(function () {
     // department management routes
     Route::prefix('jurusan')->group(function () {
         Route::get('/', [DepartmentController::class, 'index'])->name('department.index');
+        Route::get('/ajax', [DepartmentController::class, 'ajax']);
         Route::get('/create', [DepartmentController::class, 'create'])->name('department.create');
         Route::post('/', [DepartmentController::class, 'store'])->name('department.store');
         Route::get('/edit/{id}', [DepartmentController::class, 'edit'])->name('department.edit');
@@ -77,6 +79,7 @@ Route::middleware('auth')->group(function () {
     // faculty management routes
     Route::prefix('fakultas')->group(function () {
         Route::get('/', [FacultyController::class, 'index'])->name('faculty.index');
+        Route::get('/ajax', [FacultyController::class, 'ajax']);
         Route::get('/create', [FacultyController::class, 'create'])->name('faculty.create');
         Route::post('/', [FacultyController::class, 'store'])->name('faculty.store');
         Route::get('/edit/{id}', [FacultyController::class, 'edit'])->name('faculty.edit');

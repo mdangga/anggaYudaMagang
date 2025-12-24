@@ -12,10 +12,16 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Categories::withCount(['locations'])->paginate(10);
 
-        return Inertia::render('Categories/Index', [
-            'categories' => $categories,
+        return Inertia::render('Categories/Index');
+    }
+
+    public function ajax()
+    {
+        $categories = Categories::withCount(['locations'])->get();
+
+        return response()->json([
+            'data' => $categories
         ]);
     }
 

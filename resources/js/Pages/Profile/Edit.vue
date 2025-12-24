@@ -18,7 +18,7 @@ const props = defineProps({
 </script>
 
 <template>
-    <Head title="Profile" />
+    <Head :title="`Profile - ${$page.props.profile_web.app_name}`" />
 
     <AuthenticatedLayout>
         <template #header>

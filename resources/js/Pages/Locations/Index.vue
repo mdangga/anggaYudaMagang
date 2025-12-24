@@ -44,26 +44,58 @@ const notify = {
 const gridApi = ref(null)
 const rowData = ref([])
 const quickFilterText = ref('')
-
-// Hapus state isDarkMode manual, kita akan bergantung pada DOM Class
 const theme = ref(null)
 
-// Konfigurasi kolom (Sama seperti sebelumnya)
 const columnDefs = ref([
-    { field: 'student_name', headerName: 'Nama', sortable: true, flex: 1 },
-    { field: 'nim', headerName: 'NIM', sortable: true, width: 150 },
-    { field: 'name_location', headerName: 'Lokasi', sortable: true, flex: 1 },
-    { field: 'contact', headerName: 'Kontak', sortable: true, width: 150, sortable: false, },
     {
-        field: 'approved_at',
-        headerName: 'Status',
-        valueFormatter: (params) => params.value ? 'Disetujui' : 'Menunggu',
-        cellStyle: (params) => ({
-            color: params.value ? 'green' : 'orange',
-            fontWeight: 'bold'
-        }),
+        headerName: 'No',
+        valueGetter: params => params.node.rowIndex + 1,
         sortable: false,
-        width: 150
+        width: 70,
+        cellClass: 'cell-center'
+    },
+    {
+        field: 'student_name',
+        headerName: 'Nama',
+        sortable: true,
+        flex: 1,
+        cellClass: 'cell-center'
+    },
+    {
+        field: 'nim',
+        headerName: 'NIM',
+        sortable: true,
+        flex: 1,
+        cellClass: 'cell-center'
+    },
+    {
+        field: 'name_location',
+        headerName: 'Lokasi',
+        sortable: true,
+        flex: 2,
+        wrapText: true,
+        autoHeight: true,
+        cellClass: 'cell-wrap'
+    },
+    {
+        field: 'contact',
+        headerName: 'Kontak',
+        sortable: false,
+        width: 150,
+        cellClass: 'cell-center'
+    },
+    {
+        field: 'department.name_department',
+        headerName: 'Jurusan',
+        flex: 1,
+        cellClass: 'cell-center'
+    },
+    {
+        field: 'category.name_category',
+        headerName: 'Kategori',
+        sortable: false,
+        flex: 1,
+        cellClass: 'cell-center'
     },
     {
         headerName: 'Aksi',
@@ -91,10 +123,11 @@ const columnDefs = ref([
 ])
 
 const gridOptions = ref({
+    animateRows: false,
     pagination: true,
     domLayout: 'autoHeight',
     paginationPageSize: 5,
-    paginationPageSizeSelector: [1, 5, 10, 20]
+    paginationPageSizeSelector: [1, 5, 10, 20, 50, 100],
 })
 
 const onGridReady = (params) => {
@@ -102,19 +135,40 @@ const onGridReady = (params) => {
     fetchLocations()
 }
 
+const EXCLUDED_COLUMNS = ['aksi']
+
 const exportCsv = () => {
     if (!gridApi.value) return
+
+    const allColumnIds = gridApi.value
+        .getColumnDefs()
+        .map(col => col.field)
+        .filter(Boolean)
+
+    const exportColumnIds = allColumnIds.filter(
+        colId => !EXCLUDED_COLUMNS.includes(colId)
+    )
+
     gridApi.value.exportDataAsCsv({
-        processCellCallback: (params) => {
-            if (params.column.getColId() === 'nim' || params.column.getColId() === 'contact') {
-                return `'${params.value}`
+        columnKeys: exportColumnIds,
+        processCellCallback: ({ column, value }) => {
+            const colId = column.getColId()
+
+            if (['nim', 'contact'].includes(colId)) {
+                return `'${value}`
             }
-            return params.value
+
+            return value
         },
-        fileName: 'data-lokasi-magang.csv',
-        allColumns: false,
+        fileName: 'data-lokasi-magang.csv'
     })
 }
+
+
+watch(quickFilterText, (val) => {
+    if (!gridApi.value) return
+    gridApi.value.setGridOption('quickFilterText', val)
+})
 
 /* =========================
  * THEME HANDLING (FIXED)
@@ -134,7 +188,7 @@ const getTheme = (isDark) => {
             .withPart(colorSchemeDarkBlue)
         : themeQuartz.withParams({
             spacing: 12,
-            accentColor: '#2563eb', // Blue 600
+            accentColor: '#2563eb',
         })
 }
 
@@ -146,11 +200,6 @@ const updateGridTheme = () => {
 
 // Mutation Observer Variable
 let themeObserver = null
-
-watch(quickFilterText, (val) => {
-    if (!gridApi.value) return
-    gridApi.value.setGridOption('quickFilterText', val)
-})
 
 /* =========================
  * AG GRID – AJAX & LIFECYCLE
@@ -184,7 +233,6 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-    // Bersihkan observer saat pindah halaman agar tidak memory leak
     if (themeObserver) {
         themeObserver.disconnect()
     }
@@ -261,8 +309,9 @@ const approveRequest = async (id) => {
     try {
         await router.post(route('locations.approve', id), {}, { preserveScroll: true })
         notify.success('Lokasi disetujui')
-        closeDetailModal()
         fetchLocations()
+        updateGridTheme()
+        closeDetailModal()
     } catch {
         notify.error('Gagal menyetujui lokasi')
     }
@@ -270,8 +319,8 @@ const approveRequest = async (id) => {
 </script>
 
 <template>
+    <Head :title="`Lokasi - ${$page.props.profile_web.app_name}`" />
 
-    <Head title="Daftar Lokasi Magang" />
     <AuthenticatedLayout>
         <template #header>
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -379,3 +428,23 @@ const approveRequest = async (id) => {
 
     </AuthenticatedLayout>
 </template>
+
+<style scoped>
+.cell-center {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.4;
+}
+
+.cell-wrap {
+    display: flex;
+    align-items: center;
+    /* tetap vertical center */
+    white-space: normal;
+    /* AKTIF word wrap */
+    line-height: 1.4;
+}
+</style>
