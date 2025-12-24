@@ -1,263 +1,271 @@
 <script setup>
+/* =========================
+ * Core Imports
+ * ========================= */
+import { ref, computed } from 'vue'
+import { Head, Link } from '@inertiajs/vue3'
+
+/* =========================
+ * Layout & Components
+ * ========================= */
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
-import ModalDelete from '@/Components/ModalDelete.vue'
-import Pagination from '@/Components/Pagination.vue';
-import { toast } from 'vue3-toastify';
-import 'vue3-toastify/dist/index.css'
-import { Head, Link, router } from '@inertiajs/vue3'
-import { ref, inject, computed } from 'vue'
 
+/* =========================
+ * TanStack Table (Vue)
+ * ========================= */
+import {
+    createColumnHelper,
+    getCoreRowModel,
+    getFilteredRowModel,
+    getSortedRowModel,
+    getPaginationRowModel,
+    useVueTable,
+} from '@tanstack/vue-table'
+
+/* =========================
+ * Props
+ * ========================= */
 const props = defineProps({
-    faculties: Object
+    faculties: {
+        type: Array,
+        required: true,
+    },
 })
 
-const showDeleteModal = ref(false)
-const deleting = ref(false)
-const itemIdToDelete = ref(null)
-const itemName = ref('')
-
-const openDeleteModal = (id, name) => {
-    itemIdToDelete.value = id
-    itemName.value = name
-    showDeleteModal.value = true
-}
-
-const closeDeleteModal = () => {
-    if (!deleting.value) {
-        showDeleteModal.value = false
-        itemIdToDelete.value = null
-        itemName.value = ''
-    }
-}
-
-const selectedFaculty = computed(() => {
-    if (!itemIdToDelete.value) return null
-    return props.faculties.data.find(
-        c => c.id_faculty === itemIdToDelete.value
-    )
+/* =========================
+ * Table State (CLIENT SIDE)
+ * ========================= */
+const globalFilter = ref('')
+const sorting = ref([])
+const pagination = ref({
+    pageIndex: 0,
+    pageSize: 10,
 })
 
-const paginationLinks = computed(() => {
-    if (!props.faculties || !props.faculties.links) {
-        return []
-    }
+/* =========================
+ * Data Source
+ * ========================= */
+const tableData = computed(() => props.faculties)
 
-    // Jika format dari Laravel pagination
-    return props.faculties.links.map(link => ({
-        url: link.url,
-        label: link.label,
-        active: link.active
-    }))
+/* =========================
+ * Columns
+ * ========================= */
+const columnHelper = createColumnHelper()
+
+const columns = [
+    columnHelper.display({
+        id: 'no',
+        header: 'No',
+        cell: ({ row, table }) =>
+            table.getState().pagination.pageIndex *
+            table.getState().pagination.pageSize +
+            row.index +
+            1,
+    }),
+
+    columnHelper.accessor('name_faculty', {
+        header: 'Nama Fakultas',
+        enableSorting: true,
+    }),
+
+    columnHelper.accessor('departments_count', {
+        header: 'Total Jurusan',
+        enableSorting: true,
+    }),
+
+    columnHelper.display({
+        id: 'actions',
+        header: 'Aksi',
+    }),
+]
+
+/* =========================
+ * Table Instance
+ * ========================= */
+const table = useVueTable({
+    data: tableData,
+    columns,
+
+    state: {
+        globalFilter,
+        sorting,
+        pagination,
+    },
+
+    onSortingChange: updater => {
+        sorting.value =
+            typeof updater === 'function'
+                ? updater(sorting.value)
+                : updater
+    },
+
+    onPaginationChange: updater => {
+        pagination.value =
+            typeof updater === 'function'
+                ? updater(pagination.value)
+                : updater
+    },
+
+    onGlobalFilterChange: value => {
+        globalFilter.value = value
+        pagination.value.pageIndex = 0
+    },
+
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
 })
-
-const warningMessage = computed(() => {
-    if (!selectedFaculty.value) {
-        return 'Data yang dihapus tidak dapat dikembalikan.'
-    }
-
-    if (selectedFaculty.value.departments_count > 0) {
-        return `Fakultas ini memiliki ${selectedFaculty.value.departments_count} jurusan. Menghapus fakultas akan mempengaruhi data terkait.`
-    }
-
-    return 'Data yang dihapus tidak dapat dikembalikan.'
-})
-
-const deleteMessage = computed(() => {
-    return `Apakah Anda yakin ingin menghapus fakultas "${itemName.value}"? Tindakan ini tidak dapat dibatalkan.`
-})
-
-const deleteItem = () => {
-    deleting.value = true
-
-    router.delete(route('faculty.destroy', itemIdToDelete.value), {
-        preserveScroll: true,
-        onSuccess: () => {
-            toast.success("Fakultas berhasil dihapus !", {
-                position: "top-right",
-                autoClose: 5000,
-            });
-            showDeleteModal.value = false
-            itemIdToDelete.value = null
-            itemName.value = ''
-        },
-        onError: (errors) => {
-            console.error('Delete error:', errors)
-        },
-        onFinish: () => {
-            deleting.value = false
-        }
-    })
-}
-
-const handlePageClick = (url) => {
-    if (url) {
-        router.visit(url)
-    }
-}
 </script>
 
 <template>
-
     <Head title="Daftar Fakultas" />
 
     <AuthenticatedLayout>
         <template #header>
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div class="flex justify-between items-center">
                 <div>
-                    <h2 class="text-lg font-bold text-neutral-900 dark:text-neutral-50">
-                        Daftar Fakultas
-                    </h2>
-                    <p class="text-neutral-500 dark:text-neutral-300 text-xs mt-1">
-                        Kelola fakultas
+                    <h2 class="text-lg font-bold">Daftar Fakultas</h2>
+                    <p class="text-xs text-neutral-500">
+                        Kelola fakultas (client-side)
                     </p>
                 </div>
 
-                <Link :href="route('faculty.create')"
-                    class="group relative inline-flex items-center justify-center gap-2 px-4 py-2 bg-gradient-to-l from-primary-300 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all duration-300 ease-out overflow-hidden">
-
-                    <!-- Shimmer Effect -->
-                    <div
-                        class="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700">
-                    </div>
-
-                    <!-- Add Icon -->
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                    </svg>
-
-                    <!-- Button Text -->
-                    <span class="relative text-sm">
-                        Tambah Fakultas
-                    </span>
-
-                    <!-- Tooltip -->
-                    <div
-                        class="absolute bottom-full mb-2 hidden group-hover:block px-2 py-1 bg-gray-900 text-white text-xs rounded whitespace-nowrap">
-                        Tambah Fakultas Baru
-                        <div
-                            class="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900">
-                        </div>
-                    </div>
+                <Link
+                    :href="route('faculty.create')"
+                    class="px-4 py-2 bg-primary-600 text-white rounded-md text-sm"
+                >
+                    Tambah Fakultas
                 </Link>
             </div>
         </template>
 
-        <div class="py-6">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white dark:bg-slate-800 shadow-sm rounded-lg overflow-hidden">
-                    <div class="p-4">
+        <div class="py-6 max-w-7xl mx-auto">
+            <div class="bg-white dark:bg-slate-800 rounded-lg shadow-sm p-4">
 
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full border-2 border-gray-200 dark:border-slate-700">
-                                <thead class="bg-gray-100 dark:bg-slate-900">
-                                    <tr>
-                                        <th class="th">No</th>
-                                        <th class="th">Nama Fakultas</th>
-                                        <th class="th">Total Jurusan</th>
-                                        <th class="th text-center">Aksi</th>
-                                    </tr>
-                                </thead>
+                <!-- TOP CONTROLS -->
+                <div class="flex justify-between items-center mb-4 gap-4">
+                    <input
+                        v-model="globalFilter"
+                        placeholder="Cari fakultas..."
+                        class="border rounded px-3 py-2 text-sm w-64"
+                    />
 
-                                <tbody>
-                                    <tr v-for="(item, index) in faculties.data" :key="item.id_faculty"
-                                        class="border-t dark:border-slate-700 hover:bg-gray-50 dark:hover:bg-slate-700">
-                                        <td class="td">
-                                            {{ index + 1 + (faculties.current_page - 1) * faculties.per_page }}
-                                        </td>
-                                        <td class="td">
-                                            {{ item.name_faculty }}
-                                        </td>
-                                        <td class="td">
-                                            {{ item.departments_count }}
-                                        </td>
-                                        <td class="td text-start space-x-2">
-                                            <Link :href="route('faculty.edit', item.id_faculty)"
-                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-info hover:bg-info-600 text-neutral-50 hover:text-neutral-100 font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
-                                                <!-- Edit Icon -->
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                                </svg>
+                    <select
+                        v-model="pagination.pageSize"
+                        class="border rounded px-2 py-1 text-sm"
+                    >
+                        <option :value="5">5</option>
+                        <option :value="10">10</option>
+                        <option :value="25">25</option>
+                    </select>
+                </div>
 
-                                                <!-- Button Text -->
-                                                <span class="relative">
-                                                    Edit
-                                                </span>
-                                            </Link>
+                <!-- TABLE -->
+                <table class="min-w-full border">
+                    <thead class="bg-gray-100 dark:bg-slate-900">
+                        <tr>
+                            <th
+                                v-for="header in table.getHeaderGroups()[0].headers"
+                                :key="header.id"
+                                class="th cursor-pointer select-none"
+                                @click="header.column.getCanSort() && header.column.toggleSorting()"
+                            >
+                                {{ header.column.columnDef.header }}
 
-                                            <button @click="openDeleteModal(item.id_faculty, item.name_faculty)"
-                                                class="group relative inline-flex items-center justify-center gap-1.5 px-3 py-1.5 bg-danger hover:bg-danger-600 text-neutral-50 hover:text-neutral-100 font-medium rounded-md shadow hover:shadow-md transition-all duration-300 ease-out overflow-hidden text-sm">
+                                <span v-if="header.column.getIsSorted() === 'asc'">▲</span>
+                                <span v-else-if="header.column.getIsSorted() === 'desc'">▼</span>
+                            </th>
+                        </tr>
+                    </thead>
 
-                                                <!-- Trash Icon -->
-                                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                                    viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                        stroke-width="2"
-                                                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                                </svg>
+                    <tbody>
+                        <tr
+                            v-for="row in table.getRowModel().rows"
+                            :key="row.id"
+                            class="border-t"
+                        >
+                            <td class="td">
+                                {{
+                                    table.getState().pagination.pageIndex *
+                                    table.getState().pagination.pageSize +
+                                    row.index +
+                                    1
+                                }}
+                            </td>
 
-                                                <!-- Button Text -->
-                                                <span class="relative">
-                                                    Hapus
-                                                </span>
-                                            </button>
-                                        </td>
-                                    </tr>
+                            <td class="td">
+                                {{ row.original.name_faculty }}
+                            </td>
 
-                                    <tr v-if="faculties.data.length === 0">
-                                        <td colspan="9" class="text-center py-6 text-neutral-500 dark:text-neutral-400">
-                                            Data belum tersedia
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <Pagination v-if="paginationLinks.length > 0" :links="paginationLinks" />
+                            <td class="td">
+                                {{ row.original.departments_count }}
+                            </td>
+
+                            <td class="td">
+                                <div class="flex gap-2">
+                                    <Link
+                                        :href="route('faculty.edit', row.original.id_faculty)"
+                                        class="btn btn-info"
+                                    >
+                                        Edit
+                                    </Link>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <tr v-if="table.getRowModel().rows.length === 0">
+                            <td colspan="4" class="py-6 text-center text-neutral-500">
+                                Data tidak ditemukan
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- PAGINATION -->
+                <div class="flex justify-between items-center mt-4">
+                    <span class="text-sm text-neutral-500">
+                        Page {{ table.getState().pagination.pageIndex + 1 }}
+                        dari {{ table.getPageCount() }}
+                    </span>
+
+                    <div class="flex gap-2">
+                        <button
+                            class="btn"
+                            :disabled="!table.getCanPreviousPage()"
+                            @click="table.previousPage()"
+                        >
+                            Prev
+                        </button>
+
+                        <button
+                            class="btn"
+                            :disabled="!table.getCanNextPage()"
+                            @click="table.nextPage()"
+                        >
+                            Next
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
-
-        <ModalDelete :show="showDeleteModal" :title="`Hapus Fakultas ${itemName}?`" :message="deleteMessage"
-            :warning-message="warningMessage" :loading="deleting" @close="closeDeleteModal" @confirm="deleteItem"
-            confirm-text="Hapus" />
-
     </AuthenticatedLayout>
 </template>
 
 <style scoped>
 .th {
-    @apply px-4 py-3 text-left text-sm font-semibold text-neutral-700 border-b border-gray-200;
-}
-
-.dark .th {
-    @apply text-neutral-200 border-neutral-700;
+    @apply px-4 py-3 text-sm font-semibold border-b text-left;
 }
 
 .td {
-    @apply px-4 py-3 text-sm text-neutral-700 align-top;
-}
-
-.dark .td {
-    @apply text-neutral-300;
+    @apply px-4 py-3 text-sm;
 }
 
 .btn {
-    @apply px-3 py-1.5 text-xs rounded transition-colors duration-200 inline-flex items-center justify-center;
+    @apply px-3 py-1.5 text-xs rounded bg-gray-600 text-white disabled:opacity-50;
 }
 
-.btn-primary {
-    @apply bg-blue-600 text-white hover:bg-blue-700;
-}
-
-.btn-secondary {
-    @apply bg-gray-600 text-white hover:bg-gray-700 dark:bg-neutral-700 dark:hover:bg-neutral-600;
-}
-
-.btn-danger {
-    @apply bg-red-600 text-white hover:bg-red-700;
+.btn-info {
+    @apply bg-blue-600;
 }
 </style>

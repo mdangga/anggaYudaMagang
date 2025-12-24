@@ -1,3 +1,7 @@
+<script setup>
+import { usePage } from '@inertiajs/vue3'
+</script>
+
 <template>
-    <img src="storage/ordinary/logo.png" alt="">
+    <img :src="`/storage/${$page.props.profile_web.logo_path}`" alt="">
 </template>

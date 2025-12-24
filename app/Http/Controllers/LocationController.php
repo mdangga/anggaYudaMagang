@@ -15,6 +15,11 @@ class LocationController extends Controller
 {
     public function index()
     {
+        return Inertia::render('Locations/Index');
+    }
+
+    public function ajax()
+    {
         $locations = Locations::with([
             'category:id_category,name_category',
             'department:id_department,name_department,degree_level,id_faculty',
@@ -22,12 +27,13 @@ class LocationController extends Controller
             'images:id_image,id_location,image_path,alt_text'
         ])
             ->latest()
-            ->paginate(10);
+            ->get();
 
-        return Inertia::render('Locations/Index', [
-            'locations' => $locations
+        return response()->json([
+            'data' => $locations
         ]);
     }
+
 
 
     //? method to get location data json

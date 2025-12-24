@@ -11,7 +11,7 @@ class FacultyController extends Controller
 {
     public function index()
     {
-        $faculties = Faculties::withCount('departments')->paginate(10);
+        $faculties = Faculties::withCount('departments')->get();
 
         return Inertia::render('Faculties/Index', [
             'faculties' => $faculties,

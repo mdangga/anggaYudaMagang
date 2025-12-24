@@ -5,6 +5,7 @@ use App\Http\Controllers\DepartmentController;
 use App\Http\Controllers\FacultyController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProfileWebController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -26,7 +27,6 @@ Route::get('/', function () {
 Route::prefix('locations')->group(function () {
     Route::get('/get-locations', [LocationController::class, 'getData'])->name('get-location');
     Route::get('/get-locations/{id}', [LocationController::class, 'getDataById'])->name('get-location-by-id');
-    Route::get('/', [LocationController::class, 'index'])->name('locations.index');
     Route::get('/create', [LocationController::class, 'create'])->middleware('signed')->name('locations.create');
     Route::post('/', [LocationController::class, 'store'])->name('locations.store');
 });
@@ -39,14 +39,15 @@ Route::middleware('auth')->group(function () {
     })->name('dashboard');
 
     // profile routes
-    Route::prefix('profile')->group(function () {
-        Route::get('/', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::prefix('profile-web')->group(function () {
+        Route::get('/', [ProfileWebController::class, 'edit'])->name('profile.edit');
+        Route::patch('/', [ProfileWebController::class, 'update'])->name('profile.update');
     });
 
     // location management routes
     Route::prefix('locations')->group(function () {
+        Route::get('/', [LocationController::class, 'index'])->name('locations.index');
+        Route::get('/ajax', [LocationController::class, 'ajax']);
         Route::post('/generate-link', [LocationController::class, 'generate'])->name('locations.generate-link');
         Route::post('/{id}/approve', [LocationController::class, 'approve'])->name('locations.approve');
         Route::delete('/{id}', [LocationController::class, 'destroy'])->name('locations.destroy');
