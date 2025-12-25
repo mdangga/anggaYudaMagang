@@ -3,7 +3,7 @@
  * Imports
  * ======================================================= */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { Head } from '@inertiajs/vue3'
+import { Head, Link } from '@inertiajs/vue3'
 import VueApexCharts from 'vue3-apexcharts'
 
 import MapComponent from '@/Components/Map.vue'
@@ -14,6 +14,8 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
  * ======================================================= */
 const locations = ref([])
 const categories = ref([])
+const activities = ref([])
+const loadingActivities = ref(false)
 
 const selectedLocation = ref(null)
 const loadingDetail = ref(false)
@@ -54,6 +56,12 @@ const series = computed(() => [
         data: categories.value.map(item => item.locations_count || 0)
     }
 ])
+
+const recentActivities = computed(() => {
+    return [...activities.value]
+        .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+        .slice(0, 5)
+})
 
 const chartOptions = computed(() => {
     const isDark = document.documentElement.classList.contains('dark')
@@ -137,6 +145,31 @@ const currentDate = new Date().toLocaleDateString('id-ID', {
     month: 'long',
     day: 'numeric'
 })
+
+const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffTime = Math.abs(now - date)
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+
+    if (diffDays === 0) {
+        return 'Hari ini'
+    } else if (diffDays === 1) {
+        return 'Kemarin'
+    } else if (diffDays < 7) {
+        return `${diffDays} hari yang lalu`
+    } else {
+        return date.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'short',
+            year: 'numeric'
+        })
+    }
+}
+
+const formatCoordinates = (lat, lng) => {
+    return `${lat.toFixed(6)}, ${lng.toFixed(6)}`
+}
 
 const checkMobile = () => {
     isMobile.value = window.innerWidth < 768
@@ -259,12 +292,29 @@ async function getCategories() {
     }
 }
 
+async function getActivities() {
+    try {
+        loadingActivities.value = true
+        const res = await fetch('/locations/ajax')
+        if (!res.ok) throw new Error('Fetch activities failed')
+
+        const data = await res.json()
+        // Ambil data dari properti "data" jika ada
+        activities.value = Array.isArray(data.data) ? data.data : []
+    } catch (err) {
+        console.error('Error loading activities:', err)
+        activities.value = []
+    } finally {
+        loadingActivities.value = false
+    }
+}
+
 /* =========================================================
  * Lifecycle
  * ======================================================= */
 onMounted(async () => {
     checkMobile()
-    await Promise.all([getLocation(), getCategories()])
+    await Promise.all([getLocation(), getCategories(), getActivities()])
 
     requestAnimationFrame(() => {
         showMap.value = true
@@ -385,11 +435,11 @@ onUnmounted(() => {
                 </div>
             </div>
 
-            <!-- Main Content -->
-            <div class="grid grid-cols-1 gap-6">
+
+            <div class="grid lg:grid-cols-11 gap-6 mb-6">
                 <!-- Statistics Chart -->
                 <div
-                    class="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm p-5">
+                    class="lg:col-span-7 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl shadow-sm p-5">
                     <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-50 mb-4 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-blue-600 dark:text-blue-400"
                             viewBox="0 0 16 16">
@@ -401,6 +451,127 @@ onUnmounted(() => {
                     </h3>
 
                     <VueApexCharts type="bar" height="300" :options="chartOptions" :series="series"></VueApexCharts>
+                </div>
+
+                <!-- Recent Activities Section -->
+                <div
+                    class="lg:col-span-4 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm overflow-hidden">
+                    <!-- Header dengan gradient -->
+                    <div class="px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex justify-between items-center">
+                            <div class="flex items-center">
+                                <div class="flex items-center justify-center w-10 h-10">
+                                    <svg class="w-5 h-5 text-green-600 dark:text-green-400" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">Aktivitas Terbaru
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center space-x-2">
+                                <button @click="getActivities" :disabled="loadingActivities"
+                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                    <svg v-if="loadingActivities" class="animate-spin h-3 w-3 mr-1.5"
+                                        viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                            stroke-width="4" fill="none" />
+                                        <path class="opacity-75" fill="currentColor"
+                                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    <span>{{ loadingActivities ? 'Memuat...' : 'Refresh' }}</span>
+                                </button>
+
+                                <a :href="route('locations.index')"
+                                    class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                                    Lihat Semua
+                                    <svg class="w-3 h-3 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div v-if="loadingActivities" class="p-8 text-center">
+                        <div class="inline-flex flex-col items-center">
+                            <div class="relative">
+                                <div class="w-12 h-12 rounded-full border-2 border-gray-200 dark:border-gray-700"></div>
+                                <div
+                                    class="absolute top-0 left-0 w-12 h-12 rounded-full border-2 border-green-500 border-t-transparent animate-spin">
+                                </div>
+                            </div>
+                            <p class="text-sm text-gray-500 dark:text-gray-400 mt-3">Memuat aktivitas terbaru...</p>
+                        </div>
+                    </div>
+
+                    <!-- Activities List -->
+                    <div v-else-if="recentActivities.length > 0" class="divide-y divide-gray-100 dark:divide-gray-700">
+                        <div v-for="activity in recentActivities" :key="activity.id_location"
+                            @click="selectLocation(activity)"
+                            class="group px-6 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+
+                            <div class="flex items-center gap-3">
+                                <!-- Content -->
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex justify-between items-center mb-1">
+                                        <h4
+                                            class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors line-clamp-1">
+                                            {{ activity.name_location }}
+                                        </h4>
+                                        <span class="text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap ml-2">
+                                            {{ formatDate(activity.created_at) }}
+                                        </span>
+                                    </div>
+
+                                    <div class="flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                                        <span class="font-medium">{{ activity.student_name }}</span>
+                                        <span class="text-gray-400">•</span>
+                                        <span class="text-gray-500 dark:text-gray-400">{{
+                                            activity.category.name_category
+                                        }}</span>
+                                        <span class="text-gray-400">•</span>
+                                        <span class="text-gray-500 dark:text-gray-400">{{
+                                            activity.department.degree_level
+                                        }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Empty State -->
+                    <div v-else class="p-8 text-center">
+                        <div class="inline-flex flex-col items-center max-w-xs mx-auto">
+                            <div
+                                class="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mb-4">
+                                <svg class="w-8 h-8 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white mb-1">Belum ada aktivitas
+                            </h4>
+                            <p class="text-xs text-gray-500 dark:text-gray-400 mb-4">Tidak ada aktivitas magang terbaru
+                                yang
+                                ditemukan</p>
+                            <button @click="getActivities"
+                                class="inline-flex items-center px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Refresh Data
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

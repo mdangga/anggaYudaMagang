@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\ProfileWeb;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -20,6 +21,12 @@ class DatabaseSeeder extends Seeder
         User::factory()->create([
             'username' => 'admin',
             'password' => bcrypt('adminmagang'),
+        ]);
+
+        ProfileWeb::create([
+            'app_name' => 'titik magang',
+            'description' => 'sdna',
+            'logo_path' => 'logos/logo.png',
         ]);
     }
 }

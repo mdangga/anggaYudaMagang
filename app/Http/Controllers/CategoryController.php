@@ -27,7 +27,7 @@ class CategoryController extends Controller
 
     public function getStatCategories()
     {
-        $categories = Categories::withCount(['locations'])->get();
+        $categories = Categories::withCount(['locations'])->orderByDesc('locations_count')->take(10)->get();
 
         return response()->json($categories);
     }
