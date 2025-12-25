@@ -52,10 +52,10 @@ const theme = ref(null)
 
 const columnDefs = ref([
     {
-        headerName: 'No', 
-        valueGetter: "node.rowIndex + 1", 
-        width: 150,
+        headerName: 'No',
+        valueGetter: params => params.node.rowIndex + 1,
         sortable: false, 
+        width: 150, 
         flex: 1,
     },
     {

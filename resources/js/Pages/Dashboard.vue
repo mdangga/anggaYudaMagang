@@ -1,84 +1,64 @@
 <script setup>
-import { ref, onMounted, computed, watch, onUnmounted, inject } from 'vue'
+/* =========================================================
+ * Imports
+ * ======================================================= */
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Head } from '@inertiajs/vue3'
 import VueApexCharts from 'vue3-apexcharts'
+
 import MapComponent from '@/Components/Map.vue'
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue'
 
-// Data state
+/* =========================================================
+ * State
+ * ======================================================= */
 const locations = ref([])
 const categories = ref([])
+
 const selectedLocation = ref(null)
+const loadingDetail = ref(false)
+const showDetailModal = ref(false)
+const showMap = ref(false)
+
+const searchQuery = ref('')
+const filteredResults = ref([])
 const showAutocomplete = ref(false)
 const highlightedIndex = ref(-1)
-const showDetailModal = ref(false)
+
 const isMobile = ref(false)
 
-// Map reference
+/* =========================================================
+ * Refs
+ * ======================================================= */
 const mapComponentRef = ref(null)
 const mapKey = ref(Date.now())
 
-// Methods
-const checkMobile = () => {
-    isMobile.value = window.innerWidth < 768
-}
+/* =========================================================
+ * Computed
+ * ======================================================= */
+const filteredLocations = computed(() => {
+    if (!searchQuery.value.trim()) return locations.value
 
-const selectLocation = async (location) => {
-    selectedLocation.value = location
-    showDetailModal.value = true
-    showAutocomplete.value = false
-    highlightedIndex.value = -1
+    const query = searchQuery.value.toLowerCase()
 
-    try {
-        console.log('Fetching location detail for ID:', location.id_location);
-        const response = await fetch(`/locations/get-locations/${location.id_location}`);
-        if (!response.ok) throw new Error('Failed to fetch location detail');
-        const data = await response.json();
-        console.log('Location detail fetched:', data);
-        selectedLocation.value = data;
-    } catch (error) {
-        console.error('Error fetching location detail:', error);
-    }
-}
-
-const handleResize = () => {
-    checkMobile()
-    if (mapComponentRef.value) {
-        clearTimeout(window.mapResizeTimeout)
-        window.mapResizeTimeout = setTimeout(() => {
-            mapComponentRef.value.invalidateSize()
-        }, 250)
-    }
-}
-
-const closeDetailModal = () => {
-    showDetailModal.value = false
-    selectedLocation.value = null
-}
-
-// Map event handler
-const onMapInitialized = (mapInstance) => {
-    return mapInstance
-}
-
-const currentDate = new Date().toLocaleDateString('id-ID', {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-});
+    return locations.value.filter(location =>
+        location.name_location.toLowerCase().includes(query) ||
+        location.category.name_category.toLowerCase().includes(query) ||
+        location.description.toLowerCase().includes(query)
+    )
+})
 
 const series = computed(() => [
     {
         name: 'Jumlah Lokasi',
-        data: categories.value.map(item => item.locations_count)
+        data: categories.value.map(item => item.locations_count || 0)
     }
-]);
+])
 
 const chartOptions = computed(() => {
-    const isDark = document.documentElement.classList.contains('dark');
-    const textColor = isDark ? '#e2e8f0' : '#374151';
-    const gridColor = isDark ? '#334155' : '#e5e7eb';
+    const isDark = document.documentElement.classList.contains('dark')
+    const textColor = isDark ? '#e2e8f0' : '#374151'
+    const gridColor = isDark ? '#334155' : '#e5e7eb'
 
     return {
         chart: {
@@ -95,119 +75,174 @@ const chartOptions = computed(() => {
                 distributed: true
             }
         },
-        dataLabels: {
-            enabled: false
-        },
-        series: [{
-            name: 'Jumlah Lokasi',
-            data: categories.value.map(item => item.locations_count || 0)
-        }],
+        dataLabels: { enabled: false },
         xaxis: {
-            categories: categories.value.map(item => item.name_category || 'Unknown'),
+            categories: categories.value.map(
+                item => item.name_category || 'Unknown'
+            ),
             labels: {
-                style: {
-                    colors: textColor,
-                    fontSize: '12px'
-                },
+                style: { colors: textColor, fontSize: '12px' },
                 rotate: -45
             },
-            axisBorder: {
-                show: false
-            },
-            axisTicks: {
-                show: false
-            }
+            axisBorder: { show: false },
+            axisTicks: { show: false }
         },
         yaxis: {
             labels: {
-                style: {
-                    colors: textColor
-                },
-                formatter: function (val) {
-                    return Math.floor(val); // Hilangkan desimal
-                }
+                style: { colors: textColor },
+                formatter: val => Math.floor(val)
             },
             title: {
                 text: 'Jumlah Lokasi',
-                style: {
-                    color: textColor
-                }
+                style: { color: textColor }
             }
         },
         grid: {
             borderColor: gridColor,
             strokeDashArray: 4,
-            yaxis: {
-                lines: {
-                    show: true
-                }
-            }
+            yaxis: { lines: { show: true } }
         },
         tooltip: {
             theme: isDark ? 'dark' : 'light',
             y: {
-                formatter: function (val) {
-                    return val + ' lokasi';
-                }
+                formatter: val => `${val} lokasi`
             }
         },
         colors: [
             '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6',
             '#ec4899', '#14b8a6', '#f97316', '#6366f1', '#8b5cf6'
         ],
-        responsive: [{
-            breakpoint: 640,
-            options: {
-                plotOptions: {
-                    bar: {
-                        columnWidth: '60%'
-                    }
-                },
-                xaxis: {
-                    labels: {
-                        rotate: -90
+        responsive: [
+            {
+                breakpoint: 640,
+                options: {
+                    plotOptions: {
+                        bar: { columnWidth: '60%' }
+                    },
+                    xaxis: {
+                        labels: { rotate: -90 }
                     }
                 }
             }
-        }]
-    };
-});
-
-// Lifecycle
-onMounted(async () => {
-    checkMobile()
-
-    // Fetch locations
-    await getLocation()
-    await getCategories()
+        ]
+    }
 })
 
-onUnmounted(() => {
-    window.removeEventListener('resize', handleResize)
+/* =========================================================
+ * Utils
+ * ======================================================= */
+const currentDate = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
 })
 
+const checkMobile = () => {
+    isMobile.value = window.innerWidth < 768
+}
+
+const invalidateMapSize = () => {
+    if (!mapComponentRef.value) return
+
+    clearTimeout(window.mapResizeTimeout)
+    window.mapResizeTimeout = setTimeout(() => {
+        mapComponentRef.value.invalidateSize()
+    }, 250)
+}
+
+const onMapInitialized = (mapInstance) => {
+    return mapInstance
+}
+
+/* =========================================================
+ * Search & Autocomplete
+ * ======================================================= */
+const handleSearch = () => {
+    if (!searchQuery.value.trim()) {
+        clearSearch()
+        return
+    }
+
+    filteredResults.value = filteredLocations.value.slice(0, 5)
+    showAutocomplete.value = true
+    highlightedIndex.value = -1
+}
+
+const clearSearch = () => {
+    searchQuery.value = ''
+    filteredResults.value = []
+    showAutocomplete.value = false
+    highlightedIndex.value = -1
+}
+
+const highlightNext = e => {
+    e.preventDefault()
+    if (!filteredResults.value.length) return
+
+    highlightedIndex.value =
+        (highlightedIndex.value + 1) % filteredResults.value.length
+}
+
+const highlightPrev = e => {
+    e.preventDefault()
+    if (!filteredResults.value.length) return
+
+    highlightedIndex.value =
+        highlightedIndex.value <= 0
+            ? filteredResults.value.length - 1
+            : highlightedIndex.value - 1
+}
+
+const selectHighlighted = e => {
+    e.preventDefault()
+    const item = filteredResults.value[highlightedIndex.value]
+    if (item) selectLocation(item)
+}
+
+/* =========================================================
+ * Location Detail
+ * ======================================================= */
+const selectLocation = async location => {
+    selectedLocation.value = location
+    loadingDetail.value = true
+    showDetailModal.value = true
+    showAutocomplete.value = false
+    highlightedIndex.value = -1
+
+    try {
+        const res = await fetch(`/locations/get-locations/${location.id_location}`)
+        if (!res.ok) throw new Error('Failed to fetch location detail')
+
+        selectedLocation.value = await res.json()
+    } catch (err) {
+        console.error('Error fetching location detail:', err)
+    } finally {
+        loadingDetail.value = false
+    }
+}
+
+const closeDetailModal = () => {
+    showDetailModal.value = false
+    selectedLocation.value = null
+    loadingDetail.value = false
+
+    invalidateMapSize()
+}
+
+/* =========================================================
+ * API
+ * ======================================================= */
 async function getLocation() {
     try {
         const res = await fetch('/locations/get-locations')
         if (!res.ok) throw new Error('Fetch failed')
+
         const data = await res.json()
         locations.value = Array.isArray(data) ? data : []
-        return locations.value
     } catch (err) {
         console.error('Error loading locations:', err)
         locations.value = []
-        return []
-    }
-}
-
-async function getDetailLocation(id) {
-    try {
-        const res = await fetch(`/locations/get-locations/${id}`)
-        if (!res.ok) throw new Error('Fetch failed')
-        const data = await res.json()
-        return data
-    } catch (err) {
-        console.error('Error loading locations:', err)
     }
 }
 
@@ -215,18 +250,35 @@ async function getCategories() {
     try {
         const res = await fetch('categories/get-categories')
         if (!res.ok) throw new Error('Fetch failed')
+
         const data = await res.json()
         categories.value = Array.isArray(data) ? data : []
-        return categories.value
     } catch (err) {
         console.error('Error loading categories:', err)
         categories.value = []
-        return []
     }
 }
+
+/* =========================================================
+ * Lifecycle
+ * ======================================================= */
+onMounted(async () => {
+    checkMobile()
+    await Promise.all([getLocation(), getCategories()])
+
+    requestAnimationFrame(() => {
+        showMap.value = true
+    })
+})
+
+onUnmounted(() => {
+    window.removeEventListener('resize', invalidateMapSize)
+})
 </script>
 
+
 <template>
+
     <Head :title="`Dashboard Admin - ${$page.props.profile_web.app_name}`" />
 
     <AuthenticatedLayout>
@@ -249,7 +301,8 @@ async function getCategories() {
             <!-- Map Section -->
             <div
                 class="lg:col-span-2 bg-white border border-gray-200 dark:bg-slate-800 dark:border-slate-700 rounded-lg overflow-hidden mb-6">
-                <div class="p-4 border-b border-gray-200 dark:border-slate-700">
+                <!-- Header -->
+                <div class="flex justify-between p-4 border-b border-gray-200 dark:border-slate-700">
                     <h3 class="text-base font-semibold text-gray-700 dark:text-gray-50 flex items-center">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 mr-2 text-primary-600"
                             viewBox="0 0 48 48">
@@ -262,7 +315,67 @@ async function getCategories() {
                         </svg>
                         Peta Lokasi Magang
                     </h3>
+
+                    <!-- Search Input Container -->
+                    <div class="relative">
+                        <input v-model="searchQuery" @input="handleSearch" @focus="showAutocomplete = true"
+                            @keydown.down="highlightNext" @keydown.up="highlightPrev" @keydown.enter="selectHighlighted"
+                            @keydown.esc="showAutocomplete = false" type="text" placeholder="Cari lokasi magang..."
+                            class="w-full pl-10 pr-9 py-2 bg-white dark:bg-slate-800 rounded-lg border border-neutral-300 dark:border-slate-600 text-neutral-900 dark:text-white placeholder-neutral-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent text-sm" />
+
+                        <!-- Search Icon -->
+                        <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
+                            <svg xmlns="http://www.w3.org/2000/svg"
+                                class="w-4 h-4 text-neutral-500 dark:text-neutral-400" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+
+                        <!-- Clear Button -->
+                        <button v-if="searchQuery" @click="clearSearch"
+                            class="absolute right-2 top-1/2 transform -translate-y-1/2 p-1 hover:bg-neutral-100 dark:hover:bg-neutral-700 rounded">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640"
+                                class="w-3.5 h-3.5 text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-300"
+                                fill="currentColor">
+                                <path
+                                    d="M183.1 137.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L275.2 320L137.9 457.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0l137.3-137.4l137.4 137.3c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L365.8 320l137.3-137.4c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320.5 274.7z" />
+                            </svg>
+                        </button>
+
+                        <!-- Autocomplete Dropdown (Position Absolute) -->
+                        <div v-if="showAutocomplete && filteredResults.length > 0"
+                            class="absolute z-50 top-full left-0 right-0 mt-1 overflow-hidden overflow-y-auto bg-white dark:bg-neutral-800 rounded-lg border border-neutral-200 dark:border-neutral-600 shadow-lg max-h-64">
+                            <div v-for="(location, index) in filteredResults" :key="location.id_location"
+                                @click="selectLocation(location)" @mouseenter="highlightedIndex = index" :class="[
+                                    'autocomplete-item p-2 cursor-pointer transition-colors flex items-center gap-2 border-b border-neutral-100 dark:border-neutral-700 last:border-b-0',
+                                    highlightedIndex === index
+                                        ? 'bg-primary/10 dark:bg-primary/20'
+                                        : 'hover:bg-neutral-50 dark:hover:bg-neutral-700'
+                                ]">
+                                <div class="flex-shrink-0 w-8 h-8 overflow-hidden rounded-md">
+                                    <img v-if="location.images && location.images.length"
+                                        :src="`/storage/${location.images[0].image_path}`" :alt="location.name_location"
+                                        class="object-cover w-full h-full" />
+                                    <img v-else
+                                        src="https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=80&h=80&fit=crop"
+                                        alt="Default Image" class="object-cover w-full h-full" />
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <h4 class="text-xs font-semibold truncate text-neutral-900 dark:text-white">
+                                        {{ location.name_location }}
+                                    </h4>
+                                    <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
+                                        {{ location.category.name_category }} · Klik untuk lihat detail
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- Map Container -->
                 <div class="p-4">
                     <div class="h-96 w-full rounded-md overflow-hidden">
                         <MapComponent :key="mapKey" ref="mapComponentRef" :locations="locations"
@@ -304,7 +417,8 @@ async function getCategories() {
                             Detail Lokasi Magang
                         </h3>
                         <button @click="closeDetailModal"
-                            class="text-neutral-400 dark:text-neutral-300 hover:text-neutral-500 dark:hover:text-neutral-200 transition-colors p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700">
+                            class="text-neutral-400 dark:text-neutral-300 hover:text-neutral-500 dark:hover:text-neutral-200 transition-colors p-1 rounded-full hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                            :disabled="loadingDetail">
                             <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M6 18L18 6M6 6l12 12" />
@@ -313,8 +427,21 @@ async function getCategories() {
                     </div>
                 </div>
 
-                <!-- Modal Content -->
-                <div class="overflow-y-auto p-6 space-y-8 flex-grow">
+                <!-- Modal Content - Loading State -->
+                <div v-if="loadingDetail" class="overflow-y-auto p-6 flex-grow flex items-center justify-center">
+                    <div class="text-center">
+                        <div
+                            class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mb-4">
+                        </div>
+                        <p class="text-neutral-600 dark:text-neutral-300 font-medium">
+                            Memuat data detail lokasi...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Modal Content - Data Detail -->
+                <div v-else-if="selectedLocation && selectedLocation.id_location"
+                    class="overflow-y-auto p-6 space-y-8 flex-grow">
                     <!-- Dokumentasi Gambar -->
                     <div class="bg-gray-50 dark:bg-neutral-700 rounded-xl p-5 shadow-inner">
                         <h4
@@ -625,7 +752,8 @@ async function getCategories() {
                 <div
                     class="px-6 py-4 border-t border-gray-200 dark:border-neutral-700 flex justify-end flex-shrink-0 gap-3">
                     <button @click="closeDetailModal"
-                        class="px-5 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors shadow-md">
+                        class="px-5 py-2.5 rounded-lg bg-primary-600 hover:bg-primary-700 text-white font-medium transition-colors shadow-md"
+                        :disabled="loadingDetail">
                         Tutup
                     </button>
                 </div>
