@@ -1,8 +1,9 @@
+```vue
 <template>
-  <div class="relative h-full map-container">
-    <div ref="mapContainer" id="map" class="absolute inset-0 z-0"></div>
-    <slot></slot>
-  </div>
+    <div class="relative h-full map-container">
+        <div ref="mapContainer" id="map" class="absolute inset-0 z-0"></div>
+        <slot></slot>
+    </div>
 </template>
 
 <script setup>
@@ -11,19 +12,19 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 const props = defineProps({
-  locations: {
-    type: Array,
-    required: true,
-    default: () => []
-  },
-  selectedLocation: {
-    type: Object,
-    default: null
-  },
-  sidebarOpen: {
-    type: Boolean,
-    default: false
-  }
+    locations: {
+        type: Array,
+        required: true,
+        default: () => []
+    },
+    selectedLocation: {
+        type: Object,
+        default: null
+    },
+    sidebarOpen: {
+        type: Boolean,
+        default: false
+    }
 })
 
 const emit = defineEmits(['location-selected', 'map-initialized'])
@@ -35,13 +36,14 @@ const darkMode = inject('darkMode', ref(false))
 const mapContainer = ref(null)
 let map = null
 let tiles = null
+let markerLayer = null // layer khusus marker (diambil dari kode baru)
 const markers = ref({})
 const mapInitialized = ref(false)
 
 // Methods
 const createCustomIcon = () => {
-  return L.divIcon({
-    html: `
+    return L.divIcon({
+        html: `
       <div class="relative group">
         <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 640 640"
              class="transition duration-200 transform text-primary group-hover:text-primary-600 group-hover:scale-110 drop-shadow-xl dark:text-primary-600 dark:hover:text-primary-700">
@@ -51,281 +53,282 @@ const createCustomIcon = () => {
         </svg>
       </div>
     `,
-    className: 'custom-marker',
-    iconSize: [40, 40],
-    iconAnchor: [20, 40],
-    popupAnchor: [0, -40]
-  })
+        className: 'custom-marker',
+        iconSize: [40, 40],
+        iconAnchor: [20, 40],
+        popupAnchor: [0, -40]
+    })
 }
 
 const addMarkers = () => {
-  if (!map) return
+    if (!map || !markerLayer) return
 
-  // Clear existing markers
-  Object.values(markers.value).forEach(marker => {
-    if (marker && map) map.removeLayer(marker)
-  })
-  markers.value = {}
+    // Clear existing markers
+    markerLayer.clearLayers()
+    markers.value = {}
 
-  // Add new markers
-  props.locations.forEach(location => {
-    const icon = createCustomIcon()
+    // Add new markers
+    props.locations.forEach(location => {
+        if (!location.latitude || !location.longitude) return
 
-    const marker = L.marker([location.latitude, location.longitude], {
-      icon,
-      title: location.name_location
-    })
-      .addTo(map)
-      .on('click', (e) => {
-        e.originalEvent.stopPropagation()
-        emit('location-selected', location)
-      })
-      .bindPopup(`
+        const icon = createCustomIcon()
+
+        const marker = L.marker([location.latitude, location.longitude], {
+            icon,
+            title: location.name_location,
+            zoomAnimation: false,
+            fadeAnimation: false
+        })
+            .on('click', (e) => {
+                e.originalEvent?.stopPropagation()
+                emit('location-selected', location)
+            })
+            .bindPopup(`
         <div class="p-3 min-w-[180px]">
           <h3 class="mb-1 text-sm font-bold text-neutral-900 dark:text-white">${location.name_location}</h3>
           <p class="mb-2 text-xs text-neutral-600 dark:text-neutral-400">${location.category.name_category}</p>
         </div>
       `)
 
-      // Add hover tooltip
-      .bindTooltip(`
+            // Add hover tooltip
+            .bindTooltip(`
           <div class="text-sm font-semibold text-neutral-900">${location.name_location}</div>
           <div class="text-xs text-neutral-600 mt-0.5">${location.category.name_category}</div>
       `, {
-        direction: 'top',
-        offset: [0, -40],
-        opacity: 0.9,
-        className: 'custom-tooltip'
-      })
+                direction: 'top',
+                offset: [0, -40],
+                opacity: 0.9,
+                className: 'custom-tooltip'
+            })
 
-      // Show tooltip on hover
-      .on('mouseover', function (e) {
-        this.openTooltip()
-      })
-      .on('mouseout', function (e) {
-        this.closeTooltip()
-      })
+            // Show tooltip on hover
+            .on('mouseover', function () {
+                this.openTooltip()
+            })
+            .on('mouseout', function () {
+                this.closeTooltip()
+            })
 
-    markers.value[location.id_location] = marker
-  })
-
-  // Fit bounds if there are locations
-  if (props.locations.length > 0) {
-    const bounds = L.latLngBounds(props.locations.map(l => [l.latitude, l.longitude]))
-    if (bounds.isValid()) {
-      map.fitBounds(bounds.pad(0.15))
-    }
-  }
-}
-const initMap = async () => {
-  try {
-    await nextTick()
-
-    if (map) return
-
-    if (!mapContainer.value) {
-      setTimeout(initMap, 100)
-      return
-    }
-
-    map = L.map(mapContainer.value, {
-      zoomControl: false,
-      preferCanvas: true,
-      attributionControl: false,
-      maxZoom: 19,
-      minZoom: 3,
-      maxBounds: [
-        [-85, -180],
-        [85, 180]
-      ],
-      maxBoundsViscosity: 0.5
+        markerLayer.addLayer(marker)
+        markers.value[location.id_location] = marker
     })
 
-    // Hanya satu tile layer (OSM)
-    tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      maxNativeZoom: 19,
-      crossOrigin: true
-    }).addTo(map)
-
-    map.whenReady(() => {
-      setTimeout(() => {
-        map.invalidateSize();
-        if (props.locations.length > 0) {
-          const bounds = L.latLngBounds(props.locations.map(l => [l.latitude, l.longitude]))
-          if (bounds.isValid()) {
-            map.fitBounds(bounds.pad(0.1), { animate: false })
-          }
-        } else {
-          map.setView([-8.65, 115.22], 13, { animate: false })
+    // Fit bounds if there are locations
+    if (props.locations.length > 0) {
+        const bounds = L.latLngBounds(props.locations.map(l => [l.latitude, l.longitude]))
+        if (bounds.isValid()) {
+            map.fitBounds(bounds.pad(0.15), { animate: false })
         }
-      }, 200);
-    });
-
-    // Add zoom control
-    if (!map.zoomControl) {
-      L.control.zoom({
-        position: 'bottomright',
-        zoomInTitle: 'Perbesar',
-        zoomOutTitle: 'Perkecil'
-      }).addTo(map)
     }
+}
 
-    // Add attribution
-    if (!map.attributionControl) {
-      L.control.attribution({
-        position: 'bottomleft',
-        prefix: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-      }).addTo(map)
+const initMap = async () => {
+    try {
+        await nextTick()
+
+        if (map) return
+
+        if (!mapContainer.value) {
+            setTimeout(initMap, 100)
+            return
+        }
+
+        map = L.map(mapContainer.value, {
+            zoomControl: false,
+            preferCanvas: true,
+            attributionControl: false,
+            maxZoom: 19,
+            minZoom: 3,
+            maxBounds: [
+                [-85, -180],
+                [85, 180]
+            ],
+            maxBoundsViscosity: 0.5
+        })
+
+        // Hanya satu tile layer (OSM)
+        tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxNativeZoom: 19,
+            crossOrigin: true
+        }).addTo(map)
+
+        // Layer khusus marker
+        markerLayer = L.layerGroup().addTo(map)
+
+        map.whenReady(() => {
+            setTimeout(() => {
+                map.invalidateSize()
+                if (props.locations.length > 0) {
+                    const bounds = L.latLngBounds(props.locations.map(l => [l.latitude, l.longitude]))
+                    if (bounds.isValid()) {
+                        map.fitBounds(bounds.pad(0.1), { animate: false })
+                    }
+                } else {
+                    map.setView([-8.65, 115.22], 13, { animate: false, })
+                }
+            }, 200)
+        })
+
+        // Add zoom control
+        if (!map.zoomControl) {
+            L.control.zoom({
+                position: 'bottomright',
+                zoomInTitle: 'Perbesar',
+                zoomOutTitle: 'Perkecil'
+            }).addTo(map)
+        }
+
+        // Add attribution
+        if (!map.attributionControl) {
+            L.control.attribution({
+                position: 'bottomleft',
+                prefix: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map)
+        }
+
+        // Add markers
+        addMarkers()
+
+        mapInitialized.value = true
+        emit('map-initialized', map)
+
+        // Apply dark mode
+        applyMapDarkMode()
+
+    } catch (error) {
+        console.error('Error initializing map:', error)
     }
-
-    // Add markers
-    addMarkers()
-
-    mapInitialized.value = true
-    emit('map-initialized', map)
-
-    // Apply dark mode
-    applyMapDarkMode()
-
-  } catch (error) {
-    console.error('Error initializing map:', error)
-  }
 }
 
 const applyMapDarkMode = () => {
-  if (!mapContainer.value) return
+    if (!mapContainer.value) return
 
-  const leafletPane = mapContainer.value.querySelector('.leaflet-pane')
-  if (!leafletPane) return
+    const leafletPane = mapContainer.value.querySelector('.leaflet-pane')
+    if (!leafletPane) return
 
-  if (darkMode.value) {
-    // Terapkan filter untuk dark mode
-    leafletPane.style.filter = 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)'
+    if (darkMode.value) {
+        // Terapkan filter untuk dark mode
+        leafletPane.style.filter = 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)'
 
-    // Pastikan marker tidak terkena filter
-    const markers = mapContainer.value.querySelectorAll('.leaflet-marker-pane, .leaflet-shadow-pane')
-    markers.forEach(marker => {
-      marker.style.filter = 'invert(100%) hue-rotate(180deg)'
-    })
-  } else {
-    // Hapus filter untuk light mode
-    leafletPane.style.filter = ''
+        // Pastikan marker tidak terkena filter
+        const markers = mapContainer.value.querySelectorAll('.leaflet-marker-pane, .leaflet-shadow-pane')
+        markers.forEach(marker => {
+            marker.style.filter = 'invert(100%) hue-rotate(180deg)'
+        })
+    } else {
+        // Hapus filter untuk light mode
+        leafletPane.style.filter = ''
 
-    const markers = mapContainer.value.querySelectorAll('.leaflet-marker-pane, .leaflet-shadow-pane')
-    markers.forEach(marker => {
-      marker.style.filter = ''
-    })
-  }
+        const markers = mapContainer.value.querySelectorAll('.leaflet-marker-pane, .leaflet-shadow-pane')
+        markers.forEach(marker => {
+            marker.style.filter = ''
+        })
+    }
 
-  // Invalidate size untuk refresh tampilan
-  setTimeout(() => {
-    if (map) map.invalidateSize()
-  }, 50)
+    // Invalidate size untuk refresh tampilan
+    setTimeout(() => {
+        if (map) map.invalidateSize()
+    }, 50)
 }
 
 const selectLocationOnMap = (location) => {
-  if (!map) return
+    if (!map) return
 
-  map.whenReady(() => {
-    map.stop();
-    try { map.invalidateSize() } catch (e) { }
+    map.whenReady(() => {
+        map.stop()
+        map.invalidateSize()
 
-    try {
-      map.setView([location.latitude, location.longitude], 15, {
-        animate: true,
-        duration: 0.5
-      })
-    } catch (err) {
-      console.warn('setView animation failed, fallback to panTo', err)
-      try { map.panTo([location.latitude, location.longitude]) } catch (e) { }
-    }
+        map.setView([location.latitude, location.longitude], 14, {
+            animate: false
+        })
 
-    // Open popup
-    const marker = markers.value[location.id_location]
-    if (marker) {
-      try { marker.openPopup() } catch (e) { }
-    }
-  })
+        // Open popup
+        const marker = markers.value[location.id_location]
+        if (marker) {
+            marker.openPopup()
+        }
+    })
 }
 
 const clearSelectionOnMap = () => {
-  if (!map) return
+    if (!map) return
 
-  // Close popup if open
-  map.closePopup()
+    // Close popup if open
+    map.closePopup()
 
-  // Return to default view
-  if (props.locations.length > 0) {
-    const bounds = L.latLngBounds(props.locations.map(l => [l.latitude, l.longitude]))
-    if (bounds.isValid()) {
-      map.fitBounds(bounds.pad(0.15))
+    // Return to default view
+    if (props.locations.length > 0) {
+        const bounds = L.latLngBounds(props.locations.map(l => [l.latitude, l.longitude]))
+        if (bounds.isValid()) {
+            map.fitBounds(bounds.pad(0.15), { animate: false })
+        }
     }
-  }
 }
 
 const invalidateSize = () => {
-  if (map) {
-    map.invalidateSize(true)
-  }
+    if (map) {
+        map.invalidateSize()
+    }
 }
 
 // Watchers
 watch(() => props.locations, (newLocations) => {
-  if (mapInitialized.value) {
-    addMarkers()
-  }
+    if (mapInitialized.value) {
+        addMarkers()
+    }
 }, { deep: true })
 
 watch(() => props.selectedLocation, (newLocation) => {
-  if (newLocation && mapInitialized.value) {
-    selectLocationOnMap(newLocation)
-  } else if (!newLocation && mapInitialized.value) {
-    clearSelectionOnMap()
-  }
+    if (newLocation && mapInitialized.value) {
+        selectLocationOnMap(newLocation)
+    } else if (!newLocation && mapInitialized.value) {
+        clearSelectionOnMap()
+    }
 })
 
 // Watch darkMode changes
 watch(darkMode, () => {
-  if (mapInitialized.value) {
-    applyMapDarkMode()
-  }
+    if (mapInitialized.value) {
+        applyMapDarkMode()
+    }
 })
 
 watch(() => props.sidebarOpen, () => {
-  if (mapInitialized.value) {
-    setTimeout(() => {
-      invalidateSize()
-    }, 300)
-  }
+    if (mapInitialized.value) {
+        setTimeout(() => {
+            invalidateSize()
+        }, 300)
+    }
 })
 
 // Lifecycle
 onMounted(() => {
-  initMap()
+    initMap()
 })
 
 onUnmounted(() => {
-  if (map) {
-    map.remove()
-    map = null
-  }
+    if (map) {
+        map.remove()
+        map = null
+    }
 })
 
 // Expose methods to parent
 defineExpose({
-  invalidateSize,
-  selectLocationOnMap,
-  clearSelectionOnMap
+    invalidateSize,
+    selectLocationOnMap,
+    clearSelectionOnMap
 })
 </script>
 
 <style scoped>
 .map-container {
-  transition: margin-left 0.3s ease;
+    transition: margin-left 0.3s ease;
 }
 
 #map {
-  z-index: 1;
+    z-index: 1;
 }
 </style>
+```
