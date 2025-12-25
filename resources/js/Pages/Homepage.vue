@@ -3,6 +3,7 @@ import { ref, onMounted, computed, watch, onUnmounted, nextTick, provide } from 
 import { Head, Link } from '@inertiajs/vue3'
 import DarkModeToggle from '@/Components/DarkModeToggle.vue'
 import MapComponent from '@/Components/Map.vue'
+import ApplicationLogo from '@/Components/ApplicationLogo.vue'
 
 // Data state
 const locations = ref([])
@@ -366,7 +367,8 @@ watch(selectedLocation, (newLocation) => {
 
 <template>
 
-    <Head title="Home" />
+    <Head :title="`Home - ${$page.props.profile_web.app_name}`" />
+
     <div
         :class="['h-screen flex flex-col md:flex-row overflow-hidden', darkMode ? 'dark bg-neutral-900' : 'bg-neutral-50']">
 
@@ -399,14 +401,14 @@ watch(selectedLocation, (newLocation) => {
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-3">
                         <div class="flex items-center justify-center w-8 h-8 rounded-lg logo-icon md:w-9 md:h-9">
-                            <img src="storage/ordinary/logo.png" alt="Logo">
+                            <ApplicationLogo />
                         </div>
                         <div>
                             <h1 class="text-base font-bold md:text-lg text-neutral-900 dark:text-white">
-                                Peta Magang
+                                {{$page.props.profile_web.app_name}}
                             </h1>
                             <p class="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">
-                                Temukan lokasi magang & detailnya
+                                {{$page.props.profile_web.description}}
                             </p>
                         </div>
                     </div>
@@ -537,9 +539,6 @@ watch(selectedLocation, (newLocation) => {
                                 <p class="text-xs detail-subtitle md:text-sm text-neutral-500 dark:text-neutral-400">
                                     {{ selectedLocation.category.name_category }}
                                 </p>
-                                <!-- <span class="text-xs text-neutral-400 dark:text-neutral-500">
-                  {{ formatDate(selectedLocation.created_at) }}
-                </span> -->
                             </div>
                         </div>
                         <!-- separator -->
@@ -662,7 +661,7 @@ watch(selectedLocation, (newLocation) => {
                 :dark-mode="darkMode" :sidebar-open="sidebarOpen" @location-selected="selectLocation"
                 @map-initialized="onMapInitialized">
 
-                <div class="absolute z-40 flex transition-all duration-200 sm:flex-row md:inline search-container top-3 md:top-4 left-3 md:left-4 right-3 md:right-4"
+                <div class="absolute z-40 flex transition-all duration-200 sm:flex-col md:inline search-container top-3 md:top-4 left-3 md:left-4 right-3 md:right-4"
                     :class="sidebarOpen ? 'opacity-0 pointer-events-none' : 'opacity-100'">
 
                     <!-- Mobile Sidebar Toggle Button -->
@@ -674,7 +673,7 @@ watch(selectedLocation, (newLocation) => {
                         </svg>
                     </button>
 
-                    <div class="relative max-w-2xl mx-auto search-box max-h-10">
+                    <div class="relative max-w-2xl ml-14 md:mx-auto search-box max-h-10">
                         <div class="relative">
                             <div class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none">
                                 <svg class="z-20 w-4 h-4 text-neutral-400" xmlns="http://www.w3.org/2000/svg"
@@ -687,18 +686,12 @@ watch(selectedLocation, (newLocation) => {
                             <input v-model="searchQuery" @input="handleSearch" @focus="showAutocomplete = true"
                                 @keydown.down="highlightNext" @keydown.up="highlightPrev"
                                 @keydown.enter="selectHighlighted" @keydown.esc="showAutocomplete = false" type="text"
-                                placeholder="Cari atau filter lokasi magang..." class="w-full pl-9 md:pl-10 pr-28 md:pr-32 py-2.5 md:py-3
-           bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm
-           rounded-xl border border-neutral-200 dark:border-neutral-600
-           text-neutral-900 dark:text-white placeholder-neutral-500
-           focus:outline-none focus:ring-2 focus:ring-primary/50
-           focus:border-transparent shadow-lg text-sm md:text-base" />
+                                placeholder="Cari atau filter lokasi magang..." class="w-full pl-9 md:pl-10 pr-28 md:pr-32 py-2.5 md:py-3 bg-white/90 dark:bg-neutral-800/90 backdrop-blur-sm rounded-xl border border-neutral-200 dark:border-neutral-600 text-neutral-900 dark:text-white placeholder-neutral-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent shadow-lg text-sm md:text-base" />
 
                             <!-- INFO FILTER AKTIF -->
                             <div v-if="selectedCategoryIds.length"
                                 class="absolute inset-y-0 flex items-center right-10">
-                                <div class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-full
-             bg-primary-600/10 text-neutral-700 border border-primary/30">
+                                <div class="flex items-center gap-1 px-2 py-0.5 text-xs rounded-fullbg-primary-600/10 text-neutral-700 dark:text-neutral-400 border border-primary/30">
                                     <span>{{ selectedCategoryIds.length }} filter</span>
                                     <button @click.stop="clearCategories" class="hover:text-red-500">
                                         ✕

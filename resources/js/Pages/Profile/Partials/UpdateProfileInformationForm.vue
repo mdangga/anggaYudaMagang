@@ -1,18 +1,34 @@
 <script setup>
+/* =========================
+ * Import core
+ * ========================= */
+import { useForm } from '@inertiajs/vue3';
+import { ref, onUnmounted } from 'vue';
+
+/* =========================
+ * Import component
+ * ========================= */
 import InputError from '@/Components/InputError.vue';
 import InputLabel from '@/Components/InputLabel.vue';
 import PrimaryButton from '@/Components/PrimaryButton.vue';
 import TextInput from '@/Components/TextInput.vue';
-import { useForm } from '@inertiajs/vue3';
-import { ref, onUnmounted } from 'vue';
+
+/* =========================
+ * Third-party
+ * ========================= */
+import { toast } from 'vue3-toastify'
+import 'vue3-toastify/dist/index.css'
+
+/* =========================
+ * State, Props & Helper
+ * ========================= */
+const fileInput = ref(null);
+const selectedFile = ref(null);
 
 const props = defineProps({
     status: String,
     profile: Object,
 });
-
-const fileInput = ref(null);
-const selectedFile = ref(null);
 
 const previewUrl = ref(
     props.profile.logo_path
@@ -20,21 +36,16 @@ const previewUrl = ref(
         : null
 );
 
-const form = useForm({
-    app_name: props.profile.app_name ?? '',
-    description: props.profile.description ?? '',
-    logo: null,
-    _method: 'PATCH',
-});
+const notify = {
+    success: (msg) => toast.success(msg, { autoClose: 5000 }),
+    error: (msg) => toast.error(msg, { autoClose: 5000 })
+}
 
-// Cleanup blob URL
 const revokeBlob = () => {
     if (previewUrl.value?.startsWith('blob:')) {
         URL.revokeObjectURL(previewUrl.value);
     }
 };
-
-onUnmounted(revokeBlob);
 
 const triggerFileInput = () => {
     fileInput.value?.click();
@@ -43,22 +54,22 @@ const triggerFileInput = () => {
 const handleFiles = (event) => {
     const files = event.target.files || event.dataTransfer?.files;
     if (!files?.length) return;
-
+    
     const file = files[0];
-
+    
     const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!validTypes.includes(file.type)) {
         form.setError('logo', 'File harus berupa JPG, PNG, atau GIF');
         return;
     }
-
+    
     if (file.size > 2 * 1024 * 1024) {
         form.setError('logo', 'Ukuran file maksimal 2MB');
         return;
     }
-
+    
     revokeBlob();
-
+    
     selectedFile.value = file;
     form.logo = file;
     previewUrl.value = URL.createObjectURL(file);
@@ -67,16 +78,25 @@ const handleFiles = (event) => {
 
 const removeFile = () => {
     revokeBlob();
-
+    
     selectedFile.value = null;
     form.logo = null;
     previewUrl.value = props.profile.logo_path
-        ? `/storage/${props.profile.logo_path}`
-        : null;
-
+    ? `/storage/${props.profile.logo_path}`
+    : null;
+    
     if (fileInput.value) fileInput.value.value = '';
     form.clearErrors('logo');
 };
+
+onUnmounted(revokeBlob);
+
+const form = useForm({
+    app_name: props.profile.app_name ?? '',
+    description: props.profile.description ?? '',
+    logo: null,
+    _method: 'PATCH',
+});
 
 const submit = () => {
     form.post(route('profile.update'), {
@@ -84,6 +104,7 @@ const submit = () => {
         preserveScroll: true,
         onSuccess: () => {
             selectedFile.value = null;
+            notify.success('Profil Berhasil Diperbarui')
             if (fileInput.value) fileInput.value.value = '';
         },
     });
@@ -232,35 +253,6 @@ const submit = () => {
                             Save Changes
                         </span>
                     </PrimaryButton>
-
-                    <!-- Success Message -->
-                    <Transition enter-active-class="transition-all duration-300 ease-out"
-                        enter-from-class="opacity-0 -translate-x-2"
-                        leave-active-class="transition-all duration-200 ease-in"
-                        leave-to-class="opacity-0 -translate-x-2">
-                        <div v-if="form.recentlySuccessful"
-                            class="flex items-center text-sm text-green-600 dark:text-green-400">
-                            <div
-                                class="w-6 h-6 mr-2 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                                <i class="fas fa-check text-xs"></i>
-                            </div>
-                            Settings saved successfully!
-                        </div>
-                    </Transition>
-
-                    <!-- Status Message -->
-                    <Transition enter-active-class="transition-all duration-300 ease-out"
-                        enter-from-class="opacity-0 -translate-x-2"
-                        leave-active-class="transition-all duration-200 ease-in"
-                        leave-to-class="opacity-0 -translate-x-2">
-                        <div v-if="status" class="flex items-center text-sm text-blue-600 dark:text-blue-400">
-                            <div
-                                class="w-6 h-6 mr-2 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                                <i class="fas fa-info text-xs"></i>
-                            </div>
-                            {{ status }}
-                        </div>
-                    </Transition>
                 </div>
             </div>
         </form>

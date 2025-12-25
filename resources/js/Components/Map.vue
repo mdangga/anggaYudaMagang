@@ -36,7 +36,7 @@ const darkMode = inject('darkMode', ref(false))
 const mapContainer = ref(null)
 let map = null
 let tiles = null
-let markerLayer = null // layer khusus marker (diambil dari kode baru)
+let markerLayer = null
 const markers = ref({})
 const mapInitialized = ref(false)
 
@@ -60,6 +60,8 @@ const createCustomIcon = () => {
     })
 }
 
+const DEFAULT_CENTER = [-8.65, 115.22] // Bali (contoh)
+
 const addMarkers = () => {
     if (!map || !markerLayer) return
 
@@ -67,41 +69,51 @@ const addMarkers = () => {
     markerLayer.clearLayers()
     markers.value = {}
 
-    // Add new markers
+    let hasValidLocation = false
+    const icon = createCustomIcon()
+
     props.locations.forEach(location => {
         if (!location.latitude || !location.longitude) return
 
-        const icon = createCustomIcon()
+        hasValidLocation = true
 
-        const marker = L.marker([location.latitude, location.longitude], {
-            icon,
-            title: location.name_location,
-            zoomAnimation: false,
-            fadeAnimation: false
-        })
+
+        const marker = L.marker(
+            [location.latitude, location.longitude],
+            {
+                icon,
+                title: location.name_location,
+                zoomAnimation: false,
+                fadeAnimation: false,
+            }
+        )
             .on('click', (e) => {
                 e.originalEvent?.stopPropagation()
                 emit('location-selected', location)
             })
             .bindPopup(`
-        <div class="p-3 min-w-[180px]">
-          <h3 class="mb-1 text-sm font-bold text-neutral-900 dark:text-white">${location.name_location}</h3>
-          <p class="mb-2 text-xs text-neutral-600 dark:text-neutral-400">${location.category.name_category}</p>
-        </div>
-      `)
-
-            // Add hover tooltip
+                <div class="p-3 min-w-[180px]">
+                    <h3 class="mb-1 text-sm font-bold text-neutral-900 dark:text-white">
+                        ${location.name_location}
+                    </h3>
+                    <p class="mb-2 text-xs text-neutral-600 dark:text-neutral-400">
+                        ${location.category?.name_category ?? ''}
+                    </p>
+                </div>
+            `)
             .bindTooltip(`
-          <div class="text-sm font-semibold text-neutral-900">${location.name_location}</div>
-          <div class="text-xs text-neutral-600 mt-0.5">${location.category.name_category}</div>
-      `, {
+                <div class="text-sm font-semibold text-neutral-900">
+                    ${location.name_location}
+                </div>
+                <div class="text-xs text-neutral-600 mt-0.5">
+                    ${location.category?.name_category ?? ''}
+                </div>
+            `, {
                 direction: 'top',
                 offset: [0, -40],
                 opacity: 0.9,
                 className: 'custom-tooltip'
             })
-
-            // Show tooltip on hover
             .on('mouseover', function () {
                 this.openTooltip()
             })
@@ -113,14 +125,46 @@ const addMarkers = () => {
         markers.value[location.id_location] = marker
     })
 
-    // Fit bounds if there are locations
-    if (props.locations.length > 0) {
-        const bounds = L.latLngBounds(props.locations.map(l => [l.latitude, l.longitude]))
-        if (bounds.isValid()) {
-            map.fitBounds(bounds.pad(0.15), { animate: false })
-        }
+    /**
+     * DEFAULT MARKER
+     */
+    if (!hasValidLocation) {
+        const marker = L.marker(DEFAULT_CENTER, {
+            icon,
+            title: 'Lokasi Default',
+        })
+            .bindPopup(`
+                <div class="p-3 min-w-[180px]">
+                    <h3 class="mb-1 text-sm font-bold text-neutral-900 dark:text-white">
+                        Lokasi Default
+                    </h3>
+                    <p class="mb-2 text-xs text-neutral-600 dark:text-neutral-400">
+                        Belum ada data lokasi
+                    </p>
+                </div>
+            `)
+            .openPopup()
+
+        markerLayer.addLayer(marker)
+
+        map.setView(DEFAULT_CENTER, 13, { animate: false })
+        return
+    }
+
+    /**
+     * Fit bounds jika ada lokasi valid
+     */
+    const bounds = L.latLngBounds(
+        props.locations
+            .filter(l => l.latitude && l.longitude)
+            .map(l => [l.latitude, l.longitude])
+    )
+
+    if (bounds.isValid()) {
+        map.fitBounds(bounds.pad(0.15), { animate: false })
     }
 }
+
 
 const initMap = async () => {
     try {

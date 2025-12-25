@@ -37,7 +37,7 @@ const props = defineProps({
                     <UpdateProfileInformationForm
                         :status="status"
                         :profile="profile"
-                        class="max-w-xl"
+                        class="max-w-7xl"
                     />
                 </div>
             </div>
