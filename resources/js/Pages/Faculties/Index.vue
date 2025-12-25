@@ -53,7 +53,7 @@ const theme = ref(null)
 const columnDefs = ref([
     {
         headerName: 'No', 
-        valueGetter: "node.rowIndex + 1", 
+        valueGetter: params => params.node.rowIndex + 1,
         width: 150,
         sortable: false, 
         flex: 1,

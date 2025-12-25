@@ -206,13 +206,26 @@ let themeObserver = null
  * ========================= */
 const fetchLocations = async () => {
     try {
-        const { data } = await axios.get('/locations/ajax')
+        const response = await fetch('/locations/ajax', {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`)
+        }
+
+        const data = await response.json()
         rowData.value = data.data
     } catch (e) {
         console.error('Error fetching locations:', e)
         notify.error('Gagal memuat data lokasi')
     }
 }
+
 
 onMounted(() => {
     updateGridTheme()

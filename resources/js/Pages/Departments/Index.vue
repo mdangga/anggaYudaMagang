@@ -53,7 +53,7 @@ const theme = ref(null)
 const columnDefs = ref([
     {
         headerName: 'No',
-        valueGetter: "node.rowIndex + 1",
+        valueGetter: params => params.node.rowIndex + 1,
         width: 150,
         sortable: false,
         flex: 1,
@@ -62,14 +62,12 @@ const columnDefs = ref([
         field: 'name_department',
         headerName: 'Nama Jurusan',
         sortable: true,
-        filter: true,
         flex: 1,
     },
     {
         field: 'faculty.name_faculty',
         headerName: 'Nama Fakultas',
         sortable: true,
-        filter: true,
         flex: 1,
     },
     {
