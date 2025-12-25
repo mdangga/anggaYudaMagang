@@ -27,12 +27,13 @@ provide('toggleDarkMode', (value) => {
 
 // Computed
 const filteredLocations = computed(() => {
-  if (!searchQuery.value.trim()) return locations.value
-  const query = searchQuery.value.toLowerCase()
+  const query = searchQuery.value?.trim().toLowerCase()
+  if (!query) return locations.value
+
   return locations.value.filter(location =>
-    location.name_location.toLowerCase().includes(query) ||
-    location.category_name.toLowerCase().includes(query) ||
-    location.description.toLowerCase().includes(query)
+    location.name_location?.toLowerCase().includes(query) ||
+    location.description?.toLowerCase().includes(query) ||
+    location.category?.name_category?.toLowerCase().includes(query)
   )
 })
 
