@@ -126,8 +126,9 @@ const submit = () => {
 </script>
 
 <template>
+
     <Head :title="`Form Lokasi - ${$page.props.profile_web.app_name}`" />
-    
+
     <div class="min-h-screen bg-neutral-50 dark:bg-neutral-900 py-8 px-4 sm:px-6 lg:px-8">
         <div class="max-w-4xl mx-auto">
 
@@ -135,7 +136,8 @@ const submit = () => {
             <div class="mb-8">
                 <div class="flex items-center gap-3 mb-4">
                     <div
-                        class="w-10 h-10 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
+                        class="w-10 h-10 shrink-0 rounded-lg bg-gradient-to-r from-primary to-primary-dark flex items-center justify-center">
+
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-white text-lg" viewBox="0 0 24 24">
                             <path fill="currentColor" fill-rule="evenodd"
                                 d="M11.291 21.706L12 21zM12 21l.708.706a1 1 0 0 1-1.417 0l-.006-.007l-.017-.017l-.062-.063a48 48 0 0 1-1.04-1.106a50 50 0 0 1-2.456-2.908c-.892-1.15-1.804-2.45-2.497-3.734C4.535 12.612 4 11.248 4 10c0-4.539 3.592-8 8-8s8 3.461 8 8c0 1.248-.535 2.612-1.213 3.87c-.693 1.286-1.604 2.585-2.497 3.735a50 50 0 0 1-3.496 4.014l-.062.063l-.017.017l-.006.006zm0-8a3 3 0 1 0 0-6a3 3 0 0 0 0 6"
@@ -144,8 +146,9 @@ const submit = () => {
                     </div>
 
                     <div>
-                        <h1 class="text-2xl font-bold text-neutral-900 dark:text-white">Request Lokasi Magang</h1>
-                        <p class="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+                        <h1 class="text-xl md:text-2xl font-bold text-neutral-900 dark:text-white">Request Lokasi Magang
+                        </h1>
+                        <p class="text-xs md:text-sm text-neutral-500 dark:text-neutral-400 mt-1">
                             Tambahkan lokasi tempat Anda magang. Data akan diverifikasi terlebih dahulu.
                         </p>
                     </div>

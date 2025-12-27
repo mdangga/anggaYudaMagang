@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, nextTick, watch, defineProps, defineEmits, computed } from "vue"
+import { ref, onMounted, nextTick, watch, computed } from "vue"
 import { usePage } from "@inertiajs/vue3"
 import InputLabel from "@/Components/InputLabel.vue"
 import InputError from "@/Components/InputError.vue"
@@ -41,15 +41,21 @@ const initMap = () => {
     const lng = props.longitude ? parseFloat(props.longitude) : 115.2167
 
     map = L.map(mapEl.value, {
-        inertia: true,
         zoomControl: false,
+        preferCanvas: true,
         attributionControl: false,
+        maxBounds: [
+            [-85, -180],
+            [85, 180]
+        ],
+        maxBoundsViscosity: 0.5
     }).setView([lat, lng], 11)
 
     tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxNativeZoom: 19,
-        crossOrigin: true
+        crossOrigin: true,
+        noWrap: true,
     }).addTo(map)
 
     // Apply dark mode filter if needed
@@ -105,7 +111,7 @@ const createMarker = (lat, lng) => {
             icon: createCustomIcon(true),
             draggable: true
         }).addTo(map)
-        
+
         marker.on('dragend', (event) => {
             const position = event.target.getLatLng()
             updateLat(position.lat)
@@ -133,10 +139,10 @@ watch(() => [props.latitude, props.longitude], ([lat, lng]) => {
 // Watch dark mode changes
 watch(darkMode, (newVal) => {
     if (!map || !mapEl.value) return
-    
+
     const mapContainer = mapEl.value
     const leafletPane = mapContainer.querySelector('.leaflet-pane')
-    
+
     if (leafletPane) {
         if (newVal) {
             leafletPane.style.filter = 'invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%)'
@@ -168,7 +174,8 @@ const getCurrentLocation = () => {
 <template>
     <div class="bg-white dark:bg-neutral-800 rounded-xl shadow-sm border border-neutral-200 dark:border-neutral-700">
         <!-- Header -->
-        <div class="px-6 py-4 border-b border-neutral-100 dark:border-neutral-700 text-lg font-semibold text-neutral-900 dark:text-white flex items-center">
+        <div
+            class="px-6 py-4 border-b border-neutral-100 dark:border-neutral-700 text-lg font-semibold text-neutral-900 dark:text-white flex items-center">
             <i class="fas fa-map-pin text-primary mr-2"></i>
             Koordinat Lokasi
         </div>
