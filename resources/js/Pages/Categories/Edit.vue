@@ -66,7 +66,7 @@ const submit = () => {
     form.patch(route('category.update', props.category.id_category), {
         preserveScroll: true,
         onSuccess: () => form.reset(),
-        onError: (errors) => console.log('Form submission errors:', errors)
+        onError: (errors) => console.error('Form submission errors:', errors)
     })
 }
 </script>

@@ -75,7 +75,7 @@ const submit = () => {
     form.post(route('department.store'), {
         preserveScroll: true,
         onSuccess: () => form.reset(),
-        onError: (errors) => console.log('Form submission errors:', errors)
+        onError: (errors) => console.error('Form submission errors:', errors)
     })
 }
 </script>

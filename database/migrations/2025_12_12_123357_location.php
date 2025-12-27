@@ -30,7 +30,6 @@ return new class extends Migration
             $table->unsignedBigInteger('id_category');
             $table->unsignedBigInteger('id_department');
             $table->timestamps();
-            $table->softDeletes();
 
             $table->unique(['name_location', 'nim']);
             $table->foreign('id_department')->references('id_department')->on('departments')->onDelete('cascade');

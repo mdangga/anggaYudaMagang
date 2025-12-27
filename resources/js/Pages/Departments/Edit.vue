@@ -80,7 +80,7 @@ const submit = () => {
     form.patch(route('department.update', props.department.id_department), {
         preserveScroll: true,
         onSuccess: () => form.reset(),
-        onError: (errors) => console.log('Form submission errors:', errors)
+        onError: (errors) => console.error('Form submission errors:', errors)
     })
 }
 </script>

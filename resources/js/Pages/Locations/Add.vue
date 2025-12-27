@@ -119,7 +119,7 @@ const submit = () => {
                 position: "top-right",
                 autoClose: 5000,
             });
-            console.log('Form submission errors:', errors)
+            console.error('Form submission errors:', errors)
         }
     })
 }

@@ -95,11 +95,9 @@ const selectLocation = async (location) => {
     if (footer) footer.classList.add('hidden');
 
     try {
-        console.log('Fetching location detail for ID:', location.id_location);
         const response = await fetch(`/locations/get-locations/${location.id_location}`);
         if (!response.ok) throw new Error('Failed to fetch location detail');
         const data = await response.json();
-        console.log('Location detail fetched:', data);
         selectedLocation.value = data;
 
         if (data.images && data.images.length > 1) {

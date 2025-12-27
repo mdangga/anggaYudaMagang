@@ -168,18 +168,49 @@ const handleImageError = () => {
 
 const copyLink = async () => {
     if (!qrData.value?.link) return
-    
-    try {
-        await navigator.clipboard.writeText(qrData.value.link)
-        emit('generated', { type: 'copy', message: 'Link berhasil disalin' })
-    } catch (err) {
-        emit('error', { type: 'copy', message: 'Gagal menyalin link', error: err })
+
+    const success = await copyText(qrData.value.link)
+
+    if (success) {
+        emit('generated', {
+            type: 'copy',
+            message: 'Link berhasil disalin'
+        })
+    } else {
+        emit('error', {
+            type: 'copy',
+            message: 'Gagal menyalin link'
+        })
     }
 }
 
+
+const copyText = async (text) => {
+    try {
+        if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(text)
+        } else {
+            const textarea = document.createElement('textarea')
+            textarea.value = text
+            textarea.style.position = 'fixed'
+            textarea.style.left = '-9999px'
+            document.body.appendChild(textarea)
+            textarea.focus()
+            textarea.select()
+            document.execCommand('copy')
+            document.body.removeChild(textarea)
+        }
+
+        return true
+    } catch (e) {
+        return false
+    }
+}
+
+
 const downloadQRCode = () => {
     if (!qrData.value?.qrCode) return
-    
+
     try {
         const a = document.createElement('a')
         a.href = qrData.value.qrCode
@@ -193,14 +224,14 @@ const downloadQRCode = () => {
 
 const shareViaWhatsApp = () => {
     if (!qrData.value?.link) return
-    
+
     const encodedLink = encodeURIComponent(qrData.value.link)
     window.open(`https://wa.me/?text=${encodedLink}`, '_blank')
 }
 
 const shareViaTelegram = () => {
     if (!qrData.value?.link) return
-    
+
     const encodedLink = encodeURIComponent(qrData.value.link)
     window.open(`https://t.me/share/url?url=${encodedLink}`, '_blank')
 }
@@ -212,15 +243,15 @@ const retryGenerate = async () => {
 // Main function to generate QR Code
 const generateQRCode = async () => {
     if (!props.show) return
-    
+
     loading.value = true
     error.value = null
     imageError.value = false
-    
+
     try {
         // Fetch link from API
         const { data } = await axios.post(props.apiUrl)
-        
+
         if (!data?.link) {
             throw new Error('Link tidak ditemukan dalam respons')
         }
